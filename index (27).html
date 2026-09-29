@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel RCA — Equipe 870</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#0f131a; --panel:#1a2029; --panel2:#20272f; --line:#2b3340;
+  --text:#eef1f5; --muted:#8b94a3;
+  --amber:#e5a33c; --green:#3fb491; --greenbg:rgba(63,180,145,.15);
+  --gold:#c98a2e; --goldbg:rgba(201,138,46,.18);
+  --blue:#24406e; --red:#e2584f; --yellow:#e2b93b;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); box-sizing:border-box;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){ --ink:#f2f3f6; --panel:#fff; --panel2:#eef0f4; --line:#dde1e8; --text:#181c24; --muted:#5b6472; }
+}
+:root[data-theme="dark"]{ --ink:#0f131a; --panel:#1a2029; --panel2:#20272f; --line:#2b3340; --text:#eef1f5; --muted:#8b94a3; }
+*{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--ink);color:var(--text);font-family:'Space Grotesk',sans-serif;height:100%}
+.mono{font-family:'IBM Plex Mono',monospace}
+header{display:flex;align-items:center;gap:12px;padding:16px 18px 10px}
+.avatar{width:40px;height:40px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--amber);font-weight:700;font-size:16px;flex-shrink:0}
+header h1{margin:0;font-size:16px}
+header p{margin:2px 0 0;color:var(--muted);font-size:11.5px}
+.updated{padding:0 18px 12px;color:var(--muted);font-size:11.5px}
+main{max-width:760px;margin:0 auto;padding:0 16px 60px}
+
+#gate .box{max-width:420px;margin:10px auto 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;position:relative}
+#gate .box::before{content:'';position:absolute;top:0;left:16px;right:16px;height:3px;border-radius:0 0 4px 4px;background:repeating-linear-gradient(90deg,var(--red) 0 8px,transparent 8px 14px)}
+#gate h2{font-size:19px;margin:8px 0 4px}
+#gate p{color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.5}
+#gate input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:18px;text-align:center;letter-spacing:2px;padding:13px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);margin-bottom:10px}
+#gate button{width:100%;background:var(--blue);color:#fff;border:1px solid #3a5a94;border-radius:9px;padding:13px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+#gate .err{color:var(--red);font-size:12px;margin-top:10px;min-height:16px;text-align:center}
+#gate .switch{display:block;text-align:center;color:var(--muted);font-size:12.5px;margin-top:16px;text-decoration:underline;cursor:pointer}
+
+.section-title{font-size:12px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;font-weight:600;margin:22px 0 10px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.pill{background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:20px;cursor:pointer}
+.pill.active{background:var(--blue);border-color:#3a5a94;color:#fff}
+
+.bigcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px}
+.bigcard .t{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.bigcard .row{display:flex;align-items:baseline;gap:8px;margin-top:6px;flex-wrap:wrap}
+.bigcard .num{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700}
+.bigcard .meta{color:var(--muted);font-size:13px}
+.bar{height:7px;background:var(--panel2);border-radius:6px;margin-top:10px;overflow:hidden}
+.bar>div{height:100%;border-radius:6px}
+.note{color:var(--muted);font-size:12px;margin-top:8px}
+
+.pilar{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 18px}
+.pilar .item{padding:12px 0;border-bottom:1px solid var(--line)}
+.pilar .item:last-child{border-bottom:none}
+.pilar .h{display:flex;justify-content:space-between;font-weight:700;font-size:13.5px}
+.pilar .h span:last-child{color:var(--muted);font-weight:600;font-size:11.5px}
+.pilar .v{color:var(--muted);font-size:12px;margin-top:6px}
+
+.rcalist{display:flex;flex-direction:column;gap:8px}
+.rcaitem{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.rcaitem b{font-size:13.5px}
+.rcaitem .city{display:block;color:var(--muted);font-size:11.5px;margin-top:2px;font-weight:400}
+.rcaitem .pct{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700}
+
+.indcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:10px}
+.indcard .h{display:flex;justify-content:space-between;align-items:center}
+.indcard .h b{font-size:14px}
+.badge{font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:20px}
+.badge.g{background:var(--greenbg);color:var(--green)}
+.badge.a{background:var(--goldbg);color:var(--gold)}
+
+.ranklist{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 18px}
+.rankrow{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px}
+.rankrow:last-child{border-bottom:none}
+.rankrow .n{color:var(--amber);font-weight:700;font-family:'IBM Plex Mono',monospace;width:22px}
+.rankrow .name{flex:1;font-weight:600}
+.rankrow .val{font-family:'IBM Plex Mono',monospace;color:var(--muted);font-size:12.5px}
+
+.updatebox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px}
+.updatebox textarea{width:100%;min-height:90px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px;resize:vertical;margin-top:8px}
+.updatebox .msg{font-size:12px;margin-top:8px}
+.updatebox .msg.ok{color:var(--green)} .updatebox .msg.err{color:var(--red)}
+.backlink{color:var(--muted);font-size:12.5px;text-decoration:underline;cursor:pointer;display:inline-block;margin-bottom:6px}
+
+.hello{font-size:19px;font-weight:700;margin:4px 0 1px}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:4px}
+.trocar{background:none;border:none;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-left:auto;font-family:'Space Grotesk',sans-serif}
+footer{color:var(--muted);font-size:11px;text-align:center;padding:16px 0}
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="avatar">870</div>
+  <div style="flex:1">
+    <h1>Painel RCA</h1>
+    <p id="hdrSub">Equipe 870 · Perfumaria Ilhas</p>
+  </div>
+  <button class="trocar" id="trocarBtn" style="display:none" onclick="logout()">Trocar código</button>
+  <button class="trocar" id="senhaBtn" style="display:none" onclick="abrirTrocaSenha()">Trocar minha senha</button>
+</header>
+<div class="updated" id="updLine" style="display:none">Vendas atualizadas em <span id="updDate"></span></div>
+
+<main>
+<div id="gate">
+  <div class="box" id="gateBox">
+    <h2 id="gateTitle">Confira seu desempenho</h2>
+    <p id="gateSub">Digite seu código de RCA para ver metas, positivação e vendas por indústria.</p>
+    <input id="codeInput" inputmode="numeric" maxlength="5" placeholder="Seu código" autofocus>
+    <button onclick="tryLogin()" id="gateBtn">Ver meu desempenho</button>
+    <div class="err" id="gateErr"></div>
+    <span class="switch" id="switchLink" onclick="toggleAdminMode()">Acesso interno</span>
+  </div>
+</div>
+<div id="senhaBox" style="display:none;padding:10px 0"></div>
+<div id="app" style="display:none"></div>
+</main>
+<footer>Painel de uso interno da Equipe 870 · dados atualizados manualmente pela supervisão</footer>
+
+<script>
+const HEAD_HTML = "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n<title>Painel RCA \u2014 Equipe 870</title>\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap\" rel=\"stylesheet\">\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js\"><\/script>\n<style>\n:root{\n  --ink:#0f131a; --panel:#1a2029; --panel2:#20272f; --line:#2b3340;\n  --text:#eef1f5; --muted:#8b94a3;\n  --amber:#e5a33c; --green:#3fb491; --greenbg:rgba(63,180,145,.15);\n  --gold:#c98a2e; --goldbg:rgba(201,138,46,.18);\n  --blue:#24406e; --red:#e2584f; --yellow:#e2b93b;\n  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); box-sizing:border-box;\n}\n@media (prefers-color-scheme: light){\n  :root:not([data-theme=\"dark\"]){ --ink:#f2f3f6; --panel:#fff; --panel2:#eef0f4; --line:#dde1e8; --text:#181c24; --muted:#5b6472; }\n}\n:root[data-theme=\"dark\"]{ --ink:#0f131a; --panel:#1a2029; --panel2:#20272f; --line:#2b3340; --text:#eef1f5; --muted:#8b94a3; }\n*{box-sizing:border-box}\nhtml{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}\nbody{margin:0;background:var(--ink);color:var(--text);font-family:'Space Grotesk',sans-serif;height:100%}\n.mono{font-family:'IBM Plex Mono',monospace}\nheader{display:flex;align-items:center;gap:12px;padding:16px 18px 10px}\n.avatar{width:40px;height:40px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--amber);font-weight:700;font-size:16px;flex-shrink:0}\nheader h1{margin:0;font-size:16px}\nheader p{margin:2px 0 0;color:var(--muted);font-size:11.5px}\n.updated{padding:0 18px 12px;color:var(--muted);font-size:11.5px}\nmain{max-width:760px;margin:0 auto;padding:0 16px 60px}\n\n#gate .box{max-width:420px;margin:10px auto 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;position:relative}\n#gate .box::before{content:'';position:absolute;top:0;left:16px;right:16px;height:3px;border-radius:0 0 4px 4px;background:repeating-linear-gradient(90deg,var(--red) 0 8px,transparent 8px 14px)}\n#gate h2{font-size:19px;margin:8px 0 4px}\n#gate p{color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.5}\n#gate input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:18px;text-align:center;letter-spacing:2px;padding:13px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);margin-bottom:10px}\n#gate button{width:100%;background:var(--blue);color:#fff;border:1px solid #3a5a94;border-radius:9px;padding:13px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Space Grotesk',sans-serif}\n#gate .err{color:var(--red);font-size:12px;margin-top:10px;min-height:16px;text-align:center}\n#gate .switch{display:block;text-align:center;color:var(--muted);font-size:12.5px;margin-top:16px;text-decoration:underline;cursor:pointer}\n\n.section-title{font-size:12px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;font-weight:600;margin:22px 0 10px}\n.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}\n.pill{background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:20px;cursor:pointer}\n.pill.active{background:var(--blue);border-color:#3a5a94;color:#fff}\n\n.bigcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px}\n.bigcard .t{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}\n.bigcard .row{display:flex;align-items:baseline;gap:8px;margin-top:6px;flex-wrap:wrap}\n.bigcard .num{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700}\n.bigcard .meta{color:var(--muted);font-size:13px}\n.bar{height:7px;background:var(--panel2);border-radius:6px;margin-top:10px;overflow:hidden}\n.bar>div{height:100%;border-radius:6px}\n.note{color:var(--muted);font-size:12px;margin-top:8px}\n\n.pilar{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 18px}\n.pilar .item{padding:12px 0;border-bottom:1px solid var(--line)}\n.pilar .item:last-child{border-bottom:none}\n.pilar .h{display:flex;justify-content:space-between;font-weight:700;font-size:13.5px}\n.pilar .h span:last-child{color:var(--muted);font-weight:600;font-size:11.5px}\n.pilar .v{color:var(--muted);font-size:12px;margin-top:6px}\n\n.rcalist{display:flex;flex-direction:column;gap:8px}\n.rcaitem{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}\n.rcaitem b{font-size:13.5px}\n.rcaitem .city{display:block;color:var(--muted);font-size:11.5px;margin-top:2px;font-weight:400}\n.rcaitem .pct{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700}\n\n.indcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:10px}\n.indcard .h{display:flex;justify-content:space-between;align-items:center}\n.indcard .h b{font-size:14px}\n.badge{font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:20px}\n.badge.g{background:var(--greenbg);color:var(--green)}\n.badge.a{background:var(--goldbg);color:var(--gold)}\n\n.ranklist{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px 18px}\n.rankrow{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px}\n.rankrow:last-child{border-bottom:none}\n.rankrow .n{color:var(--amber);font-weight:700;font-family:'IBM Plex Mono',monospace;width:22px}\n.rankrow .name{flex:1;font-weight:600}\n.rankrow .val{font-family:'IBM Plex Mono',monospace;color:var(--muted);font-size:12.5px}\n\n.updatebox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px}\n.updatebox textarea{width:100%;min-height:90px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px;resize:vertical;margin-top:8px}\n.updatebox .msg{font-size:12px;margin-top:8px}\n.updatebox .msg.ok{color:var(--green)} .updatebox .msg.err{color:var(--red)}\n.backlink{color:var(--muted);font-size:12.5px;text-decoration:underline;cursor:pointer;display:inline-block;margin-bottom:6px}\n\n.hello{font-size:19px;font-weight:700;margin:4px 0 1px}\n.sub{color:var(--muted);font-size:12.5px;margin-bottom:4px}\n.trocar{background:none;border:none;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-left:auto;font-family:'Space Grotesk',sans-serif}\nfooter{color:var(--muted);font-size:11px;text-align:center;padding:16px 0}\n</style>\n</head>\n<body>\n\n<header id=\"hdr\">\n  <div class=\"avatar\">870</div>\n  <div style=\"flex:1\">\n    <h1>Painel RCA</h1>\n    <p id=\"hdrSub\">Equipe 870 \u00b7 Perfumaria Ilhas</p>\n  </div>\n  <button class=\"trocar\" id=\"trocarBtn\" style=\"display:none\" onclick=\"logout()\">Trocar c\u00f3digo</button>\n  <button class=\"trocar\" id=\"senhaBtn\" style=\"display:none\" onclick=\"abrirTrocaSenha()\">Trocar minha senha</button>\n</header>\n<div class=\"updated\" id=\"updLine\" style=\"display:none\">Vendas atualizadas em <span id=\"updDate\"></span></div>\n\n<main>\n<div id=\"gate\">\n  <div class=\"box\" id=\"gateBox\">\n    <h2 id=\"gateTitle\">Confira seu desempenho</h2>\n    <p id=\"gateSub\">Digite seu c\u00f3digo de RCA para ver metas, positiva\u00e7\u00e3o e vendas por ind\u00fastria.</p>\n    <input id=\"codeInput\" inputmode=\"numeric\" maxlength=\"5\" placeholder=\"Seu c\u00f3digo\" autofocus>\n    <button onclick=\"tryLogin()\" id=\"gateBtn\">Ver meu desempenho</button>\n    <div class=\"err\" id=\"gateErr\"></div>\n    <span class=\"switch\" id=\"switchLink\" onclick=\"toggleAdminMode()\">Acesso interno</span>\n  </div>\n</div>\n<div id=\"senhaBox\" style=\"display:none;padding:10px 0\"></div>\n<div id=\"app\" style=\"display:none\"></div>\n</main>\n<footer>Painel de uso interno da Equipe 870 \u00b7 dados atualizados manualmente pela supervis\u00e3o</footer>\n\n";
+const LAST_UPDATE = "26/09/2026, 09:43";
+const data = [{"cod":"11655","nome":"Adriana Aurora","cidade":"Portel","metaVolume":100000,"faturado":149836.44,"definido":0,"liberado":4614.63,"paradoVenc":667.88,"paradoLimite":0,"metaPosit":40,"posit":34,"metaInd":36,"ind":36,"grupo":"divisao","industrias":[{"nome":"Maná","meta":18,"tipo":"qtd","realizado":16,"clientes":["30 862 029 KELIANE GUIOMAR DE CARVALHO ME","50 584 824 BENEZEL ALVES ME","BENEDITO ROBERTO COMERCIO DE ALIMENTOS LTDA","C B DE CARVALHO COMERCIO DE ALIMENTOS EIRELI","C S DE CARVALHO LTDA","DOMINGOS BARREIRO PANTOJA LTDA EPP","E D MONTEIRO ME","EDVALDO SIQUEIRA DOS SANTOS-ME","F H P CARVALHO","JOELY M CORDEIRO COMERCIO DE GENERO ALIMENTICIOS ME","LAURINHO LTDA","MARIA ALICE DA SILVA RABELO LTDA","MIGUEL Q DA SILVA COMERCIO ME","N B SOARES COMERCIO","R C LAURINHO EPP","VITOR RABELO DOS SANTOS LTDA EPP"]},{"nome":"Sab. Johnson","meta":18,"tipo":"qtd","realizado":20,"clientes":["50 584 824 BENEZEL ALVES ME","53 958 487 GENESIO DO SOCORRO FREITAS DA SILVA ME","55 976 362 JACKSON QUEROZ DA SILVA ME","BENEDITO NUNES COELHO","BENEDITO ROBERTO COMERCIO DE ALIMENTOS LTDA","C B DE CARVALHO COMERCIO DE ALIMENTOS EIRELI","C S DE CARVALHO LTDA","CLEMENTINO F FERREIRA LTDA ME","D P CARDOSO JUNIOR COMERCIO","DOMINGOS BARREIRO PANTOJA LTDA EPP","E D MONTEIRO ME","E G MONTEIRO","EDVALDO SIQUEIRA DOS SANTOS-ME","JOELY M CORDEIRO COMERCIO DE GENERO ALIMENTICIOS ME","LAURINHO LTDA","MARIA ALICE DA SILVA RABELO LTDA","MIGUEL Q DA SILVA COMERCIO ME","N B SOARES COMERCIO","TRINDADE LTDA EPP","VITOR RABELO DOS SANTOS LTDA EPP"]},{"nome":"Natu Hair","meta":8000,"tipo":"valor","realizado":8823.09,"clientes":["BENEDITO NUNES COELHO","BENEDITO ROBERTO COMERCIO DE ALIMENTOS LTDA","C S DE CARVALHO LTDA","D P CARDOSO JUNIOR COMERCIO","E D MONTEIRO ME","EDVALDO SIQUEIRA DOS SANTOS-ME","H V DE SOUZA COMERCIO","JOELY M CORDEIRO COMERCIO DE GENERO ALIMENTICIOS ME","LAURINHO LTDA","MARIA ALICE DA SILVA RABELO LTDA","MIGUEL Q DA SILVA COMERCIO ME","MORAES E SILVA COM DE ALIMENTOS LTDA","N B SOARES COMERCIO","S DA S GONCALVES SOBRINHO EIRELI","TRINDADE LTDA EPP","VITOR RABELO DOS SANTOS LTDA EPP"]},{"nome":"Cless","meta":4000,"tipo":"valor","realizado":4254.9,"clientes":["30 862 029 KELIANE GUIOMAR DE CARVALHO ME","BENEDITO ROBERTO COMERCIO DE ALIMENTOS LTDA","C S DE CARVALHO LTDA","E D MONTEIRO ME","E G MONTEIRO","EDVALDO SIQUEIRA DOS SANTOS-ME","F EUDES GOMES LTDA EPP","LAURINHO LTDA","MARIA ALICE DA SILVA RABELO LTDA","MIGUEL Q DA SILVA COMERCIO ME","N B SOARES COMERCIO","TRINDADE LTDA EPP","VITOR RABELO DOS SANTOS LTDA EPP"]},{"nome":"Scoobydoo","meta":18000,"tipo":"valor","realizado":14734.34,"clientes":["53 958 487 GENESIO DO SOCORRO FREITAS DA SILVA ME","58 832 722 ADELSON GONCALVES DOS SANTOS ME","BENEDITO NUNES COELHO","BENEDITO ROBERTO COMERCIO DE ALIMENTOS LTDA","C B DE CARVALHO COMERCIO DE ALIMENTOS EIRELI","C S DE CARVALHO LTDA","D P CARDOSO JUNIOR COMERCIO","DOMINGOS BARREIRO PANTOJA LTDA EPP","E G MONTEIRO","JOELY M CORDEIRO COMERCIO DE GENERO ALIMENTICIOS ME","MARIA ALICE DA SILVA RABELO LTDA","MIGUEL Q DA SILVA COMERCIO ME","MORAES E SILVA COM DE ALIMENTOS LTDA","N B SOARES COMERCIO","S GUIOMAR PEREIRA ME","TRINDADE LTDA EPP","VITOR RABELO DOS SANTOS LTDA EPP"]},{"nome":"Baston","meta":4000,"tipo":"valor","realizado":4377.24,"clientes":["50 584 824 BENEZEL ALVES ME","53 958 487 GENESIO DO SOCORRO FREITAS DA SILVA ME","BENEDITO NUNES COELHO","BENEDITO ROBERTO COMERCIO DE ALIMENTOS LTDA","C S DE CARVALHO LTDA","E D MONTEIRO ME","EDVALDO SIQUEIRA DOS SANTOS-ME","JOELY M CORDEIRO COMERCIO DE GENERO ALIMENTICIOS ME","MIGUEL Q DA SILVA COMERCIO ME","N B SOARES COMERCIO","VITOR RABELO DOS SANTOS LTDA EPP"]}],"clientesPositivados":[{"nome":"30 862 029 KELIANE GUIOMAR DE CARVALHO ME","industrias":["Cless","Maná"]},{"nome":"50 584 824 BENEZEL ALVES ME","industrias":["Sab. Johnson","Baston","Maná"]},{"nome":"53 958 487 GENESIO DO SOCORRO FREITAS DA SILVA ME","industrias":["Sab. Johnson","Scoobydoo","Baston"]},{"nome":"55 976 362 JACKSON QUEROZ DA SILVA ME","industrias":["Sab. Johnson"]},{"nome":"58 832 722 ADELSON GONCALVES DOS SANTOS ME","industrias":["Scoobydoo"]},{"nome":"BENEDITO NUNES COELHO","industrias":["Sab. Johnson","Natu Hair","Scoobydoo","Baston"]},{"nome":"BENEDITO ROBERTO COMERCIO DE ALIMENTOS LTDA","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo","Baston","Maná"]},{"nome":"BRUNA SUELEN EVANGELISTA MACHADO PACHECO 00745864244","industrias":[]},{"nome":"C B DE CARVALHO COMERCIO DE ALIMENTOS EIRELI","industrias":["Sab. Johnson","Scoobydoo","Maná"]},{"nome":"C S DE CARVALHO LTDA","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo","Baston","Maná"]},{"nome":"CLEMENTINO F FERREIRA LTDA ME","industrias":["Sab. Johnson"]},{"nome":"D B V PACHECO LTDA ME","industrias":[]},{"nome":"D P CARDOSO JUNIOR COMERCIO","industrias":["Sab. Johnson","Natu Hair","Scoobydoo"]},{"nome":"DOMINGOS BARREIRO PANTOJA LTDA EPP","industrias":["Sab. Johnson","Scoobydoo","Maná"]},{"nome":"E D MONTEIRO ME","industrias":["Cless","Sab. Johnson","Natu Hair","Baston","Maná"]},{"nome":"E G MONTEIRO","industrias":["Cless","Sab. Johnson","Scoobydoo"]},{"nome":"EDVALDO SIQUEIRA DOS SANTOS-ME","industrias":["Cless","Sab. Johnson","Natu Hair","Baston","Maná"]},{"nome":"F EUDES GOMES LTDA EPP","industrias":["Cless"]},{"nome":"F H P CARVALHO","industrias":["Maná"]},{"nome":"H V DE SOUZA COMERCIO","industrias":["Natu Hair"]},{"nome":"JOELY M CORDEIRO COMERCIO DE GENERO ALIMENTICIOS ME","industrias":["Sab. Johnson","Natu Hair","Scoobydoo","Baston","Maná"]},{"nome":"LAURINHO LTDA","industrias":["Cless","Sab. Johnson","Natu Hair","Maná"]},{"nome":"M T PINHEIRO COMERCIO DE HORTIFRUTIGRANJEIRO ME","industrias":[]},{"nome":"MARIA ALICE DA SILVA RABELO LTDA","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo","Maná"]},{"nome":"MIGUEL Q DA SILVA COMERCIO ME","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo","Baston","Maná"]},{"nome":"MIRAMOR DE S FERREIRA ME","industrias":[]},{"nome":"MORAES E SILVA COM DE ALIMENTOS LTDA","industrias":["Natu Hair","Scoobydoo"]},{"nome":"N B SOARES COMERCIO","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo","Baston","Maná"]},{"nome":"N DE C LOBATO","industrias":[]},{"nome":"R C LAURINHO EPP","industrias":["Maná"]},{"nome":"S DA S GONCALVES SOBRINHO EIRELI","industrias":["Natu Hair"]},{"nome":"S GUIOMAR PEREIRA ME","industrias":["Scoobydoo"]},{"nome":"TRINDADE LTDA EPP","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo"]},{"nome":"VITOR RABELO DOS SANTOS LTDA EPP","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo","Baston","Maná"]}]},{"cod":"27209","nome":"Fabio","cidade":"Breves 1","metaVolume":100000,"faturado":57854.58,"definido":0,"liberado":4252.78,"paradoVenc":3107.38,"paradoLimite":9725.76,"metaPosit":35,"posit":7,"metaInd":31,"ind":1,"grupo":"divisao","industrias":[{"nome":"Maná","meta":15,"tipo":"qtd","realizado":0,"clientes":[]},{"nome":"Sab. Johnson","meta":16,"tipo":"qtd","realizado":1,"clientes":["DANICLEI FARIAS DAS GRACAS 88897990215"]},{"nome":"Natu Hair","meta":4000,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Cless","meta":4000,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Scoobydoo","meta":16000,"tipo":"valor","realizado":2496.96,"clientes":["DANICLEI FARIAS DAS GRACAS 88897990215","R S DA SILVA SUPERMERCADO ME","SOLANGE MORAES DA GAMA 02533271217"]},{"nome":"Baston","meta":3000,"tipo":"valor","realizado":0,"clientes":[]}],"clientesPositivados":[{"nome":"A P BELO FRAZAO LTDA ME","industrias":[]},{"nome":"DANICLEI FARIAS DAS GRACAS 88897990215","industrias":["Scoobydoo","Sab. Johnson"]},{"nome":"M ADENILSON MARQUES PENA ME","industrias":[]},{"nome":"MAIS BARATO DE BREVES LTDA EPP","industrias":[]},{"nome":"N DOS S BASTOS-ME","industrias":[]},{"nome":"R S DA SILVA SUPERMERCADO ME","industrias":["Scoobydoo"]},{"nome":"SOLANGE MORAES DA GAMA 02533271217","industrias":["Scoobydoo"]}]},{"cod":"31067","nome":"Beatriz","cidade":"Anajás","metaVolume":80000,"faturado":31835.31,"definido":0,"liberado":6993.14,"paradoVenc":3936.47,"paradoLimite":0,"metaPosit":28,"posit":15,"metaInd":30,"ind":20,"grupo":"divisao","industrias":[{"nome":"Maná","meta":15,"tipo":"qtd","realizado":7,"clientes":["COMERCIAL FARIAS CIA LTDA EPP","ESDRA GOMES DE LIMA ME","MANOEL DO CARMO ATACAREJO LTDA","MARIA REIS DA SILVA 39556565272","RANGEL SANTOS RODRIGUES","SARDINHA EMELO COMERCIOEIRELE EPP","SOUZA COMERCIO DE PRODUTOS ALIMENTICIOS"]},{"nome":"Sab. Johnson","meta":15,"tipo":"qtd","realizado":13,"clientes":["50 627 319 EDINELSON FONSECA DA SILVA ME","COMERCIAL FARIAS CIA LTDA EPP","D. DA C. MENDES","DAVI G MARTINS ME","ESDRA GOMES DE LIMA ME","J DE N DA S FARIAS ME","M R COMERCIO E HOTEL LTDA EPP","M. M. SANTOS E DIAS GONCALVES COMER LTDA","MARIA REIS DA SILVA 39556565272","PEDRO PAULO MARTINS DA SILVA 01577513258","RANGEL SANTOS RODRIGUES","SARDINHA EMELO COMERCIOEIRELE EPP","SOUZA COMERCIO DE PRODUTOS ALIMENTICIOS"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":1764.98,"clientes":["COMERCIAL FARIAS CIA LTDA EPP","D. DA C. MENDES","ESDRA GOMES DE LIMA ME","J DE N DA S FARIAS ME","M R COMERCIO E HOTEL LTDA EPP","M. M. SANTOS E DIAS GONCALVES COMER LTDA","MARIA REIS DA SILVA 39556565272","PEDRO PAULO MARTINS DA SILVA 01577513258","RANGEL SANTOS RODRIGUES","SARDINHA EMELO COMERCIOEIRELE EPP","SOUZA COMERCIO DE PRODUTOS ALIMENTICIOS"]},{"nome":"Cless","meta":2000,"tipo":"valor","realizado":1487.5,"clientes":["COMERCIAL FARIAS CIA LTDA EPP","DAVI G MARTINS ME","ESDRA GOMES DE LIMA ME","M R COMERCIO E HOTEL LTDA EPP","M. M. SANTOS E DIAS GONCALVES COMER LTDA","MARIA REIS DA SILVA 39556565272","PEDRO PAULO MARTINS DA SILVA 01577513258","RANGEL SANTOS RODRIGUES","SARDINHA EMELO COMERCIOEIRELE EPP","SOUZA COMERCIO DE PRODUTOS ALIMENTICIOS"]},{"nome":"Scoobydoo","meta":8000,"tipo":"valor","realizado":1750.08,"clientes":["DAVI G MARTINS ME","M R COMERCIO E HOTEL LTDA EPP","M. M. SANTOS E DIAS GONCALVES COMER LTDA","PORTO MATERIAIS DE CONSTRUCAO LTDA EPP"]},{"nome":"Baston","meta":2000,"tipo":"valor","realizado":1738.53,"clientes":["COMERCIAL FARIAS CIA LTDA EPP","ESDRA GOMES DE LIMA ME","M R COMERCIO E HOTEL LTDA EPP","M. M. SANTOS E DIAS GONCALVES COMER LTDA","PEDRO PAULO MARTINS DA SILVA 01577513258"]}],"clientesPositivados":[{"nome":"50 627 319 EDINELSON FONSECA DA SILVA ME","industrias":["Sab. Johnson"]},{"nome":"COMERCIAL FARIAS CIA LTDA EPP","industrias":["Cless","Natu Hair","Sab. Johnson","Baston","Maná"]},{"nome":"D. DA C. MENDES","industrias":["Natu Hair","Sab. Johnson"]},{"nome":"DAVI G MARTINS ME","industrias":["Cless","Sab. Johnson","Scoobydoo"]},{"nome":"ESDRA GOMES DE LIMA ME","industrias":["Cless","Natu Hair","Sab. Johnson","Baston","Maná"]},{"nome":"J DE N DA S FARIAS ME","industrias":["Natu Hair","Sab. Johnson"]},{"nome":"M R COMERCIO E HOTEL LTDA EPP","industrias":["Cless","Natu Hair","Sab. Johnson","Scoobydoo","Baston"]},{"nome":"M. M. SANTOS E DIAS GONCALVES COMER LTDA","industrias":["Cless","Natu Hair","Sab. Johnson","Scoobydoo","Baston"]},{"nome":"MANOEL DO CARMO ATACAREJO LTDA","industrias":["Maná"]},{"nome":"MARIA REIS DA SILVA 39556565272","industrias":["Cless","Natu Hair","Sab. Johnson","Maná"]},{"nome":"PEDRO PAULO MARTINS DA SILVA 01577513258","industrias":["Cless","Natu Hair","Sab. Johnson","Baston"]},{"nome":"PORTO MATERIAIS DE CONSTRUCAO LTDA EPP","industrias":["Scoobydoo"]},{"nome":"RANGEL SANTOS RODRIGUES","industrias":["Cless","Natu Hair","Sab. Johnson","Maná"]},{"nome":"SARDINHA EMELO COMERCIOEIRELE EPP","industrias":["Cless","Natu Hair","Sab. Johnson","Maná"]},{"nome":"SOUZA COMERCIO DE PRODUTOS ALIMENTICIOS","industrias":["Cless","Natu Hair","Sab. Johnson","Maná"]}]},{"cod":"23681","nome":"Erivaldo","cidade":"Curralinho","metaVolume":80000,"faturado":42347.2,"definido":0,"liberado":0,"paradoVenc":0,"paradoLimite":0,"metaPosit":30,"posit":24,"metaInd":30,"ind":39,"grupo":"geral","industrias":[{"nome":"Dabelle","meta":15,"tipo":"qtd","realizado":19,"clientes":["53 969 730 CAROLINE FERNANDES REIS ME","54 101 557 JOSE MARIA CERDEIRA REIS ME","57 123 681 JESIEL FERREIRA COUTINHO ME","63 997 760 GEREMIAS LIMA GONCALVES ME","64 201 869 WALDIR BOAVENTURA DA CONCEICAO BRITO ME","A S GUIMARAES ME","DAILSON BECKER DE OLIVEIRA 00931078202","E Z SILVA RIBEIRO ME","G S DA S JUNIOR ME","H C R MOTA ME","H CRISTINA RAMOS MOTA AMORIM EPP","JOSELANE BARBOSA DOS SANTOS 70080010296","JOSICLEY D FURTADO","L C B ALVES ME","L O ARNAUD ME","LEONILSON CARDOSO GOMES 85278971215","ODILEIA DA SILVA LEAO LTDA ME","RAYANE RIBEIRO PUREZA 54336279268","RENATO FAGUNDES RIBEIRO LTDA ME"]},{"nome":"Sab. Johnson","meta":15,"tipo":"qtd","realizado":20,"clientes":["53 969 730 CAROLINE FERNANDES REIS ME","54 101 557 JOSE MARIA CERDEIRA REIS ME","57 123 681 JESIEL FERREIRA COUTINHO ME","63 997 760 GEREMIAS LIMA GONCALVES ME","64 201 869 WALDIR BOAVENTURA DA CONCEICAO BRITO ME","A S GUIMARAES ME","DAILSON BECKER DE OLIVEIRA 00931078202","E Z SILVA RIBEIRO ME","G S DA S JUNIOR ME","H C R MOTA ME","H CRISTINA RAMOS MOTA AMORIM EPP","JOSELANE BARBOSA DOS SANTOS 70080010296","JOSICLEY D FURTADO","L C B ALVES ME","L O ARNAUD ME","LEONILSON CARDOSO GOMES 85278971215","MAKEMIEL A DE MORAES EPP","ODILEIA DA SILVA LEAO LTDA ME","RAYANE RIBEIRO PUREZA 54336279268","RENATO FAGUNDES RIBEIRO LTDA ME"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":237.63,"clientes":["54 101 557 JOSE MARIA CERDEIRA REIS ME","LEONILSON CARDOSO GOMES 85278971215"]},{"nome":"Dental Clean","meta":2000,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Scoobydoo","meta":8000,"tipo":"valor","realizado":2039.76,"clientes":["53 969 730 CAROLINE FERNANDES REIS ME","57 123 681 JESIEL FERREIRA COUTINHO ME","MAKEMIEL A DE MORAES EPP","RENATO FAGUNDES RIBEIRO LTDA ME"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":180.75,"clientes":["E Z SILVA RIBEIRO ME","RAYANE RIBEIRO PUREZA 54336279268"]}],"clientesPositivados":[{"nome":"53 969 730 CAROLINE FERNANDES REIS ME","industrias":["Sab. Johnson","Scoobydoo","Dabelle"]},{"nome":"54 101 557 JOSE MARIA CERDEIRA REIS ME","industrias":["Sab. Johnson","Natu Hair","Dabelle"]},{"nome":"57 123 681 JESIEL FERREIRA COUTINHO ME","industrias":["Sab. Johnson","Scoobydoo","Dabelle"]},{"nome":"63 997 760 GEREMIAS LIMA GONCALVES ME","industrias":["Sab. Johnson","Dabelle"]},{"nome":"64 201 869 WALDIR BOAVENTURA DA CONCEICAO BRITO ME","industrias":["Sab. Johnson","Dabelle"]},{"nome":"A S GUIMARAES ME","industrias":["Sab. Johnson","Dabelle"]},{"nome":"C S DA CRUZ LTDA","industrias":[]},{"nome":"DAILSON BECKER DE OLIVEIRA 00931078202","industrias":["Sab. Johnson","Dabelle"]},{"nome":"E A DE MORAES EPP","industrias":[]},{"nome":"E Z SILVA RIBEIRO ME","industrias":["Sab. Johnson","Dabelle","Baston"]},{"nome":"ELY AMARAL DE MORAES","industrias":[]},{"nome":"G S DA S JUNIOR ME","industrias":["Sab. Johnson","Dabelle"]},{"nome":"H C R MOTA ME","industrias":["Sab. Johnson","Dabelle"]},{"nome":"H CRISTINA RAMOS MOTA AMORIM EPP","industrias":["Sab. Johnson","Dabelle"]},{"nome":"JOSELANE BARBOSA DOS SANTOS 70080010296","industrias":["Sab. Johnson","Dabelle"]},{"nome":"JOSICLEY D FURTADO","industrias":["Sab. Johnson","Dabelle"]},{"nome":"L C B ALVES ME","industrias":["Sab. Johnson","Dabelle"]},{"nome":"L O ARNAUD ME","industrias":["Sab. Johnson","Dabelle"]},{"nome":"LEONILSON CARDOSO GOMES 85278971215","industrias":["Sab. Johnson","Natu Hair","Dabelle"]},{"nome":"MAKEMIEL A DE MORAES EPP","industrias":["Cless","Sab. Johnson","Scoobydoo"]},{"nome":"ODILEIA DA SILVA LEAO LTDA ME","industrias":["Sab. Johnson","Dabelle"]},{"nome":"RAYANE RIBEIRO PUREZA 54336279268","industrias":["Sab. Johnson","Dabelle","Baston"]},{"nome":"RENATO FAGUNDES RIBEIRO LTDA ME","industrias":["Cless","Sab. Johnson","Scoobydoo","Dabelle"]},{"nome":"RODRIGO FREITAS DA SILVA 54336236291","industrias":[]}]},{"cod":"12407","nome":"Ester Alves","cidade":"Limoeiro","metaVolume":80000,"faturado":39694.53,"definido":0,"liberado":2703.31,"paradoVenc":512.4,"paradoLimite":0,"metaPosit":38,"posit":36,"metaInd":32,"ind":37,"grupo":"divisao","industrias":[{"nome":"Maná","meta":16,"tipo":"qtd","realizado":16,"clientes":["63 427 948 ADNILTON DA SILVA CASTRO ME","ARTUR DIAS CARDOSO ME","C. DO S. M. GOMES - ME","COMERCIAL CASTILHO LTDA ME","D BALIEIRO LEAO ME","EDIELSON L GOMES ME","FABIO MARTINS LEAL","J CAVALCANTE FREITAS ME","J T GONCALVES LTDA ME","JESSICA DA SILVA DE ASSUNCAO COMERCIO","JOSE BASTOS DA SILVA 02119297274","KATIA S SILVA","MANOEL DAS GRACAS DE SOUZA","P RAIOL DOS SANTOS","T P DE SOUZA ME","TAIANE COSTA ALVES"]},{"nome":"Sab. Johnson","meta":16,"tipo":"qtd","realizado":21,"clientes":["52 187 520 JORIEL DE SOUZA ALFAIA ME","63 427 948 ADNILTON DA SILVA CASTRO ME","ARTUR DIAS CARDOSO ME","C. DO S. M. GOMES - ME","CASTRO FARMA E BELEZA LTDA ME","COMERCIAL CASTILHO LTDA ME","D BALIEIRO LEAO ME","E D SOUSA MORAES ME","E J COSTA FARIAS DROGARIA ME","EDIELSON L GOMES ME","EURIMILA PINHEIRO DE SOUSA","FABIO MARTINS LEAL","FARMA LIMOEIRO LTDA","FRANCIANE GONCALVES PINHEIRO 67173640253","J CAVALCANTE FREITAS ME","KATIA S SILVA","LEONILSON P SOUSA","MANOEI DO SOCORRO COSTA BALIEIRO","MANOEL DAS GRACAS DE SOUZA","MERCANTIL ALAN C GONCALVES LTDA ME","T P DE SOUZA ME"]},{"nome":"Natu Hair","meta":3000,"tipo":"valor","realizado":855,"clientes":["52 187 520 JORIEL DE SOUZA ALFAIA ME","EDIELSON L GOMES ME","T P DE SOUZA ME","TAIANE COSTA ALVES"]},{"nome":"Cless","meta":3000,"tipo":"valor","realizado":690.94,"clientes":["56 390 067 EWERSON LOBO PINHEIRO ME","E J COSTA FARIAS DROGARIA ME","FARMA LIMOEIRO LTDA"]},{"nome":"Scoobydoo","meta":7000,"tipo":"valor","realizado":4109.7,"clientes":["50 850 779 TIAGO COELHO ROCHA ME","52 187 520 JORIEL DE SOUZA ALFAIA ME","EURIMILA PINHEIRO DE SOUSA","FABIO MARTINS LEAL","FARMA LIMOEIRO LTDA","JESSICA DA SILVA DE ASSUNCAO COMERCIO","KATIA S SILVA","LEONILSON P SOUSA","MANOEL DAS GRACAS DE SOUZA","R P RODRIGUES MEDICAMENTOS ME","SILVA E BALIEIRO LTDA ME","T P DE SOUZA ME"]},{"nome":"Baston","meta":3000,"tipo":"valor","realizado":629.1,"clientes":["63 427 948 ADNILTON DA SILVA CASTRO ME","ARTUR DIAS CARDOSO ME","E J COSTA FARIAS DROGARIA ME","EDIELSON L GOMES ME","FRANCIANE GONCALVES PINHEIRO 67173640253","P RAIOL DOS SANTOS"]}],"clientesPositivados":[{"nome":"24 490 481 LUCIENI CARDOSO BASTO ME","industrias":[]},{"nome":"50 850 779 TIAGO COELHO ROCHA ME","industrias":["Scoobydoo"]},{"nome":"52 187 520 JORIEL DE SOUZA ALFAIA ME","industrias":["Sab. Johnson","Natu Hair","Scoobydoo"]},{"nome":"56 390 067 EWERSON LOBO PINHEIRO ME","industrias":["Cless"]},{"nome":"63 427 948 ADNILTON DA SILVA CASTRO ME","industrias":["Sab. Johnson","Baston","Maná"]},{"nome":"66 379 154 JOSE DOS SANTOS LEAO ME","industrias":[]},{"nome":"ALINE DOS SANTOS DE JESUS 01536816248","industrias":[]},{"nome":"ARTUR DIAS CARDOSO ME","industrias":["Sab. Johnson","Baston","Maná"]},{"nome":"C. DO S. M. GOMES - ME","industrias":["Sab. Johnson","Maná"]},{"nome":"CASTRO FARMA E BELEZA LTDA ME","industrias":["Sab. Johnson"]},{"nome":"COMERCIAL CASTILHO LTDA ME","industrias":["Sab. Johnson","Maná"]},{"nome":"D BALIEIRO LEAO ME","industrias":["Sab. Johnson","Maná"]},{"nome":"D COSTA BORGES LTDA ME","industrias":[]},{"nome":"E D SOUSA MORAES ME","industrias":["Sab. Johnson"]},{"nome":"E J COSTA FARIAS DROGARIA ME","industrias":["Sab. Johnson","Cless","Baston"]},{"nome":"EDIELSON L GOMES ME","industrias":["Sab. Johnson","Natu Hair","Baston","Maná"]},{"nome":"EURIMILA PINHEIRO DE SOUSA","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"FABIO MARTINS LEAL","industrias":["Sab. Johnson","Scoobydoo","Maná"]},{"nome":"FARMA LIMOEIRO LTDA","industrias":["Sab. Johnson","Cless","Scoobydoo"]},{"nome":"FRANCIANE GONCALVES PINHEIRO 67173640253","industrias":["Sab. Johnson","Baston"]},{"nome":"J CAVALCANTE FREITAS ME","industrias":["Sab. Johnson","Maná"]},{"nome":"J T GONCALVES LTDA ME","industrias":["Maná"]},{"nome":"JANILCY MORAES BARRA 82302820215","industrias":[]},{"nome":"JESSICA DA SILVA DE ASSUNCAO COMERCIO","industrias":["Scoobydoo","Maná"]},{"nome":"JOSE BASTOS DA SILVA 02119297274","industrias":["Maná"]},{"nome":"KATIA S SILVA","industrias":["Sab. Johnson","Scoobydoo","Maná"]},{"nome":"LEONILSON P SOUSA","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"MANOEI DO SOCORRO COSTA BALIEIRO","industrias":["Sab. Johnson"]},{"nome":"MANOEL DAS GRACAS DE SOUZA","industrias":["Sab. Johnson","Scoobydoo","Maná"]},{"nome":"MERCANTIL ALAN C GONCALVES LTDA ME","industrias":["Sab. Johnson"]},{"nome":"P RAIOL DOS SANTOS","industrias":["Baston","Maná"]},{"nome":"R OLIVEIRA GONCALVES COMERCIO DE MERCADORIAS EPP","industrias":[]},{"nome":"R P RODRIGUES MEDICAMENTOS ME","industrias":["Scoobydoo"]},{"nome":"SILVA E BALIEIRO LTDA ME","industrias":["Scoobydoo"]},{"nome":"T P DE SOUZA ME","industrias":["Sab. Johnson","Natu Hair","Scoobydoo","Maná"]},{"nome":"TAIANE COSTA ALVES","industrias":["Natu Hair","Maná"]}]},{"cod":"39427","nome":"Daniele Pires","cidade":"Ponta de Pedras","metaVolume":60000,"faturado":76616.75,"definido":0,"liberado":1390.37,"paradoVenc":0,"paradoLimite":0,"metaPosit":26,"posit":24,"metaInd":28,"ind":15,"grupo":"divisao","industrias":[{"nome":"Maná","meta":14,"tipo":"qtd","realizado":5,"clientes":["32 280 116 PAULO SOUZA CORREIA ME","ALEXANDRE PEREIRA DA SILVA 00930998278","OZERINO LOBATO DE OLIVEIRA","RESTITUICAO COMERCIO DE ALIMENTOS EIRELI","VALDERMI AIRES FERREIRA"]},{"nome":"Sab. Johnson","meta":14,"tipo":"qtd","realizado":10,"clientes":["32 280 116 PAULO SOUZA CORREIA ME","49 105 779 JONIEL DA COSTA FURTADO ME","55 242 666 VAELSON PIRES TAVARES ME","ALEXANDRE PEREIRA DA SILVA 00930998278","ELIELSON SILVA DAMASCENO EPP","KEVYN CHRYSTIAN SANTOS TAVARES","L W DOS SANTOS","MARINALDO SARGES DA SILVA 87854112215","MINI HOME CENTER BRITO LTDA ME","OZERINO LOBATO DE OLIVEIRA"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":1499.76,"clientes":["ALEXANDRE PEREIRA DA SILVA 00930998278","ELIELSON SILVA DAMASCENO EPP"]},{"nome":"Cless","meta":2500,"tipo":"valor","realizado":897.48,"clientes":["ALEXANDRE PEREIRA DA SILVA 00930998278","MARINALDO SARGES DA SILVA 87854112215","RICARDO C DAMASCENO","T B F TAVARES COMERCIO E SERVICOS ME"]},{"nome":"Scoobydoo","meta":8000,"tipo":"valor","realizado":2910.6,"clientes":["32 280 116 PAULO SOUZA CORREIA ME","49 105 779 JONIEL DA COSTA FURTADO ME","A P RODRIGUES VISUAL FARMA EIRELI","ALEXANDRE PEREIRA DA SILVA 00930998278","ELIELSON SILVA DAMASCENO EPP","J A FERREIRA MORAES","KEVYN CHRYSTIAN SANTOS TAVARES","MARINALDO SARGES DA SILVA 87854112215","T B F TAVARES COMERCIO E SERVICOS ME","TACIO PIRES DA SILVA ME","W V S COMERCIO E SERVICOS LTDA ME"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":1255.8,"clientes":["32 280 116 PAULO SOUZA CORREIA ME","49 105 779 JONIEL DA COSTA FURTADO ME","ALEXANDRE PEREIRA DA SILVA 00930998278","ELIELSON SILVA DAMASCENO EPP","J A FERREIRA MORAES","L W DOS SANTOS"]}],"clientesPositivados":[{"nome":"32 280 116 PAULO SOUZA CORREIA ME","industrias":["Sab. Johnson","Scoobydoo","Baston","Maná"]},{"nome":"49 105 779 JONIEL DA COSTA FURTADO ME","industrias":["Sab. Johnson","Scoobydoo","Baston"]},{"nome":"55 242 666 VAELSON PIRES TAVARES ME","industrias":["Sab. Johnson"]},{"nome":"A P RODRIGUES VISUAL FARMA EIRELI","industrias":["Scoobydoo"]},{"nome":"ALEXANDRE PEREIRA DA SILVA 00930998278","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo","Baston","Maná"]},{"nome":"CY LOBATO VARIEDADES LTDA ME","industrias":[]},{"nome":"ELIELSON SILVA DAMASCENO EPP","industrias":["Sab. Johnson","Natu Hair","Scoobydoo","Baston"]},{"nome":"ENIO PIRES MORAES","industrias":[]},{"nome":"J A FERREIRA MORAES","industrias":["Scoobydoo","Baston"]},{"nome":"JOAO DE DEUS MORAIS NETO","industrias":[]},{"nome":"KEVYN CHRYSTIAN SANTOS TAVARES","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"L W DOS SANTOS","industrias":["Sab. Johnson","Baston"]},{"nome":"MARCOS GERMAN SOLER HEASTIE ME","industrias":[]},{"nome":"MARINALDO SARGES DA SILVA 87854112215","industrias":["Cless","Sab. Johnson","Scoobydoo"]},{"nome":"MINI HOME CENTER BRITO LTDA ME","industrias":["Sab. Johnson"]},{"nome":"MINI MERCADO COMERCIO LTDA ME","industrias":[]},{"nome":"OZERINO LOBATO DE OLIVEIRA","industrias":["Sab. Johnson","Maná"]},{"nome":"RESTITUICAO COMERCIO DE ALIMENTOS EIRELI","industrias":["Maná"]},{"nome":"RICARDO C DAMASCENO","industrias":["Cless"]},{"nome":"T B F TAVARES COMERCIO E SERVICOS ME","industrias":["Cless","Scoobydoo"]},{"nome":"TACIO PIRES DA SILVA ME","industrias":["Scoobydoo"]},{"nome":"TADEU DA SILVA FURTADO ME","industrias":[]},{"nome":"VALDERMI AIRES FERREIRA","industrias":["Maná"]},{"nome":"W V S COMERCIO E SERVICOS LTDA ME","industrias":["Scoobydoo"]}]},{"cod":"42260","nome":"Nataly","cidade":"S.S. da Boa Vista","metaVolume":80000,"faturado":40529.82,"definido":0,"liberado":569.91,"paradoVenc":478.08,"paradoLimite":1684.8,"metaPosit":25,"posit":13,"metaInd":28,"ind":5,"grupo":"geral","industrias":[{"nome":"Dabelle","meta":14,"tipo":"qtd","realizado":2,"clientes":["AMARAL PINTO MERCEARIA EIRELI","TEIXEIRA E COSTA COMERCIO LTDA ME"]},{"nome":"Sab. Johnson","meta":14,"tipo":"qtd","realizado":3,"clientes":["DIMAYRA MAYTE PANTOJA FARIAS 01303312280","M E GOMES DO COUTO COMERCIO LTDA ME","TEIXEIRA E COSTA COMERCIO LTDA ME"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":426.84,"clientes":["I A CARNEIRO ME","M E GOMES DO COUTO COMERCIO LTDA ME","RAIMUNDA MENDES ALVES 60616873204"]},{"nome":"Dental Clean","meta":1500,"tipo":"valor","realizado":99.99,"clientes":["M E GOMES DO COUTO COMERCIO LTDA ME"]},{"nome":"Scoobydoo","meta":10000,"tipo":"valor","realizado":12691.78,"clientes":["ALDECIR MONTEIRO DO ESPIRITO SANTO 02013929250","AMARAL PINTO MERCEARIA EIRELI","DIMAYRA MAYTE PANTOJA FARIAS 01303312280","M P COSTA COMERCIO","SUPERMERCADO & CONVENIENCIA IDEAL EIRELI","TEIXEIRA E COSTA COMERCIO LTDA ME"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":195.72,"clientes":["M E GOMES DO COUTO COMERCIO LTDA ME"]}],"clientesPositivados":[{"nome":"A C GOMES LTDA ME","industrias":[]},{"nome":"ALDECIR MONTEIRO DO ESPIRITO SANTO 02013929250","industrias":["Scoobydoo"]},{"nome":"AMARAL PINTO MERCEARIA EIRELI","industrias":["Scoobydoo","Dabelle"]},{"nome":"C DE J M DOS ANJOS ME","industrias":[]},{"nome":"DIMAYRA MAYTE PANTOJA FARIAS 01303312280","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"E V DE ARAUJO JUNIOR","industrias":[]},{"nome":"ELEDYELSON F DE ARAUJO ME","industrias":[]},{"nome":"I A CARNEIRO ME","industrias":["Natu Hair"]},{"nome":"M E GOMES DO COUTO COMERCIO LTDA ME","industrias":["Cless","Sab. Johnson","Dental Clean","Natu Hair","Baston"]},{"nome":"M P COSTA COMERCIO","industrias":["Scoobydoo"]},{"nome":"RAIMUNDA MENDES ALVES 60616873204","industrias":["Natu Hair"]},{"nome":"SUPERMERCADO & CONVENIENCIA IDEAL EIRELI","industrias":["Scoobydoo"]},{"nome":"TEIXEIRA E COSTA COMERCIO LTDA ME","industrias":["Sab. Johnson","Scoobydoo","Dabelle"]}]},{"cod":"41836","nome":"Malena Cunha","cidade":"Bagre","metaVolume":80000,"faturado":19977.58,"definido":0,"liberado":0,"paradoVenc":0,"paradoLimite":0,"metaPosit":25,"posit":10,"metaInd":28,"ind":1,"grupo":"divisao","industrias":[{"nome":"Maná","meta":14,"tipo":"qtd","realizado":0,"clientes":[]},{"nome":"Sab. Johnson","meta":14,"tipo":"qtd","realizado":1,"clientes":["H F DE MELO JUNIOR ME"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":64.41,"clientes":["DIGIANE SOUTO MAIA 01641048280"]},{"nome":"Cless","meta":2000,"tipo":"valor","realizado":193.8,"clientes":["DIGIANE SOUTO MAIA 01641048280","I D M CORREA LTDA"]},{"nome":"Scoobydoo","meta":8000,"tipo":"valor","realizado":191.82,"clientes":["39 567 357 BRIELE AMARAL SOZINHO ME"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":195.84,"clientes":["67 938 218 THIAGO SOARES DA SILVA ME"]}],"clientesPositivados":[{"nome":"39 567 357 BRIELE AMARAL SOZINHO ME","industrias":["Scoobydoo"]},{"nome":"67 938 218 THIAGO SOARES DA SILVA ME","industrias":["Baston"]},{"nome":"C M OZORIO ME","industrias":[]},{"nome":"C Y CARDOSO RODRIGUES COMERCIO LTDA ME","industrias":[]},{"nome":"D P MALATO ME","industrias":[]},{"nome":"DIGIANE SOUTO MAIA 01641048280","industrias":["Cless","Natu Hair"]},{"nome":"H F DE MELO JUNIOR ME","industrias":["Sab. Johnson"]},{"nome":"I D M CORREA LTDA","industrias":["Cless"]},{"nome":"REINALDO DA CONCEICAO BRITO 12090956291","industrias":[]},{"nome":"V. FARIAS COMERCIO VAREJISTA DE MERCADORIAS EM GERAL","industrias":[]}]},{"cod":"40237","nome":"Gabriele","cidade":"Breves 2","metaVolume":80000,"faturado":10901.42,"definido":0,"liberado":436.86,"paradoVenc":198.72,"paradoLimite":0,"metaPosit":35,"posit":7,"metaInd":30,"ind":7,"grupo":"divisao","industrias":[{"nome":"Maná","meta":15,"tipo":"qtd","realizado":2,"clientes":["J. C. SOUZA DA GAMA - ME","RODRIGUES COMERCIO E SERVICOS LTDA ME"]},{"nome":"Sab. Johnson","meta":15,"tipo":"qtd","realizado":5,"clientes":["57 742 194 JAILSON DEMES MEIRELES ME","CASA DO PAO PANIFICADORA E CONFEITARIA LTDA ME","J. C. SOUZA DA GAMA - ME","M V CAMPOS - ME","RODRIGUES COMERCIO E SERVICOS LTDA ME"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":152.64,"clientes":["RODRIGUES COMERCIO E SERVICOS LTDA ME"]},{"nome":"Cless","meta":4000,"tipo":"valor","realizado":548.28,"clientes":["N P RAMOS -ME","RODRIGUES COMERCIO E SERVICOS LTDA ME"]},{"nome":"Scoobydoo","meta":16000,"tipo":"valor","realizado":1434.88,"clientes":["57 742 194 JAILSON DEMES MEIRELES ME","RODRIGUES COMERCIO E SERVICOS LTDA ME"]},{"nome":"Baston","meta":3000,"tipo":"valor","realizado":0,"clientes":[]}],"clientesPositivados":[{"nome":"57 742 194 JAILSON DEMES MEIRELES ME","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"CASA DO PAO PANIFICADORA E CONFEITARIA LTDA ME","industrias":["Sab. Johnson"]},{"nome":"EDSON MIRANDA DE BRITO COMERCIO DE ALIMENTOS LTDA","industrias":[]},{"nome":"J. C. SOUZA DA GAMA - ME","industrias":["Sab. Johnson","Maná"]},{"nome":"M V CAMPOS - ME","industrias":["Sab. Johnson"]},{"nome":"N P RAMOS -ME","industrias":["Cless"]},{"nome":"RODRIGUES COMERCIO E SERVICOS LTDA ME","industrias":["Cless","Sab. Johnson","Natu Hair","Scoobydoo","Maná"]}]},{"cod":"30139","nome":"Marcelo Palheta","cidade":"Gurupá","metaVolume":80000,"faturado":40436.57,"definido":0,"liberado":4039.92,"paradoVenc":0,"paradoLimite":0,"metaPosit":30,"posit":18,"metaInd":30,"ind":22,"grupo":"geral","industrias":[{"nome":"Dabelle","meta":15,"tipo":"qtd","realizado":10,"clientes":["ALBINO PALHETA DE LIMA LTDA","B DE J DA SILVA MATOS ME","BRUNO CARDOSO DO NASCIMENTO LTDA EPP","C V P RODRIGUES LTDA EPP","ENILDA FONSECA DA SILVA LTDA ME","J B DE JESUS LTDA EPP","J LAZAME DAS NEVES","JOSIMO BAHIA DE JESUS","M PENA DE OLIVEIRA LTDA EPP","R B CAMARAO LTDA EPP"]},{"nome":"Sab. Johnson","meta":15,"tipo":"qtd","realizado":12,"clientes":["ALBINO PALHETA DE LIMA LTDA","BENEDITO MUNIZ DE LIMA ME","BRUNO CARDOSO DO NASCIMENTO LTDA EPP","C M L DOS SANTOS LTDA ME","C V P RODRIGUES LTDA EPP","J B DE JESUS LTDA EPP","J I CAMARAO DE LIMA LTDA EPP","J LAZAME DAS NEVES","JOSIMO BAHIA DE JESUS","M PENA DE OLIVEIRA LTDA EPP","R B CAMARAO LTDA EPP","ROBERTO DOS SANTOS RAMOS LTDA EPP"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":1528.68,"clientes":["ALBINO PALHETA DE LIMA LTDA","J B DE JESUS LTDA EPP","J I CAMARAO DE LIMA LTDA EPP","M PENA DE OLIVEIRA LTDA EPP"]},{"nome":"Dental Clean","meta":2000,"tipo":"valor","realizado":43.68,"clientes":["ROBERTO DOS SANTOS RAMOS LTDA EPP"]},{"nome":"Scoobydoo","meta":8000,"tipo":"valor","realizado":5481.02,"clientes":["ALBINO PALHETA DE LIMA LTDA","C M L DOS SANTOS LTDA ME","ENILDA FONSECA DA SILVA LTDA ME","J LAZAME DAS NEVES","M PENA DE OLIVEIRA LTDA EPP"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":572.43,"clientes":["ALBINO PALHETA DE LIMA LTDA","EDILBERTO DOS A DE SOUZA LTDA","J I CAMARAO DE LIMA LTDA EPP","M PENA DE OLIVEIRA LTDA EPP"]}],"clientesPositivados":[{"nome":"ALBINO PALHETA DE LIMA LTDA","industrias":["Cless","Natu Hair","Scoobydoo","Sab. Johnson","Baston","Dabelle"]},{"nome":"B DE J DA SILVA MATOS ME","industrias":["Dabelle"]},{"nome":"BENEDITO MUNIZ DE LIMA ME","industrias":["Sab. Johnson","Maná"]},{"nome":"BRUNO CARDOSO DO NASCIMENTO LTDA EPP","industrias":["Sab. Johnson","Dabelle"]},{"nome":"C M F LOUCHARD LTDA EPP","industrias":[]},{"nome":"C M L DOS SANTOS LTDA ME","industrias":["Scoobydoo","Sab. Johnson"]},{"nome":"C V P RODRIGUES LTDA EPP","industrias":["Sab. Johnson","Dabelle"]},{"nome":"DOMINGOS BENEDITO RODRIGUES VIEIRA ME","industrias":[]},{"nome":"E S MEDEIROS LTDA","industrias":[]},{"nome":"EDILBERTO DOS A DE SOUZA LTDA","industrias":["Baston","Maná"]},{"nome":"ENILDA FONSECA DA SILVA LTDA ME","industrias":["Scoobydoo","Dabelle","Maná"]},{"nome":"J B DE JESUS LTDA EPP","industrias":["Natu Hair","Sab. Johnson","Dabelle","Maná"]},{"nome":"J I CAMARAO DE LIMA LTDA EPP","industrias":["Natu Hair","Sab. Johnson","Baston"]},{"nome":"J LAZAME DAS NEVES","industrias":["Cless","Scoobydoo","Sab. Johnson","Dabelle","Maná"]},{"nome":"JOSIMO BAHIA DE JESUS","industrias":["Sab. Johnson","Dabelle","Maná"]},{"nome":"M PENA DE OLIVEIRA LTDA EPP","industrias":["Natu Hair","Scoobydoo","Sab. Johnson","Baston","Dabelle","Maná"]},{"nome":"R B CAMARAO LTDA EPP","industrias":["Sab. Johnson","Dabelle"]},{"nome":"ROBERTO DOS SANTOS RAMOS LTDA EPP","industrias":["Dental Clean","Sab. Johnson"]}]},{"cod":"30951","nome":"Nedina de Oliveira","cidade":"Muaná","metaVolume":50000,"faturado":37943.57,"definido":0,"liberado":0,"paradoVenc":0,"paradoLimite":0,"metaPosit":18,"posit":10,"metaInd":20,"ind":4,"grupo":"geral","industrias":[{"nome":"Dabelle","meta":10,"tipo":"qtd","realizado":0,"clientes":[]},{"nome":"Sab. Johnson","meta":10,"tipo":"qtd","realizado":4,"clientes":["64 753 349 SANDOVAL DA SILVA BARBOSA ME","J M BATISTA NOVAES COMERCIO DE ALIMENTOS E MEDICAMENTOS LTDA ME","LUCINEIA ROSA DE SOUZA","W M FARMA LTDA ME"]},{"nome":"Natu Hair","meta":2000,"tipo":"valor","realizado":402.5,"clientes":["J M BATISTA NOVAES COMERCIO DE ALIMENTOS E MEDICAMENTOS LTDA ME"]},{"nome":"Dental Clean","meta":1000,"tipo":"valor","realizado":79.8,"clientes":["LUCINEIA ROSA DE SOUZA"]},{"nome":"Scoobydoo","meta":5000,"tipo":"valor","realizado":3170.87,"clientes":["H. MACIEL MARTINS","J M BATISTA NOVAES COMERCIO DE ALIMENTOS E MEDICAMENTOS LTDA ME","R C DE CARVALHO COMERCIO ME","W M FARMA LTDA ME"]},{"nome":"Baston","meta":2000,"tipo":"valor","realizado":241.06,"clientes":["H. MACIEL MARTINS","J M BATISTA NOVAES COMERCIO DE ALIMENTOS E MEDICAMENTOS LTDA ME","JOELSON POCA LTDA ME","M L NUNES DE ANDRADE"]}],"clientesPositivados":[{"nome":"50 534 673 JOSE ADALMIRO CARVALHO SIDONIO ME","industrias":[]},{"nome":"64 753 349 SANDOVAL DA SILVA BARBOSA ME","industrias":["Sab. Johnson"]},{"nome":"DIOCESE DE PONTA DE PEDRAS","industrias":[]},{"nome":"H. MACIEL MARTINS","industrias":["Scoobydoo","Maná","Baston"]},{"nome":"J M BATISTA NOVAES COMERCIO DE ALIMENTOS E MEDICAMENTOS LTDA ME","industrias":["Sab. Johnson","Natu Hair","Scoobydoo","Baston"]},{"nome":"JOELSON POCA LTDA ME","industrias":["Baston"]},{"nome":"LUCINEIA ROSA DE SOUZA","industrias":["Sab. Johnson","Dental Clean"]},{"nome":"M L NUNES DE ANDRADE","industrias":["Baston"]},{"nome":"R C DE CARVALHO COMERCIO ME","industrias":["Scoobydoo"]},{"nome":"W M FARMA LTDA ME","industrias":["Sab. Johnson","Scoobydoo"]}]},{"cod":"33972","nome":"Emenson Amaral","cidade":"","metaVolume":50000,"faturado":41435.02,"definido":0,"liberado":0,"paradoVenc":0,"paradoLimite":0,"metaPosit":10,"posit":8,"metaInd":14,"ind":0,"grupo":"geral","industrias":[{"nome":"Dabelle","meta":7,"tipo":"qtd","realizado":0,"clientes":[]},{"nome":"Sab. Johnson","meta":7,"tipo":"qtd","realizado":0,"clientes":[]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Dental Clean","meta":2000,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Scoobydoo","meta":6000,"tipo":"valor","realizado":2146.08,"clientes":["FRUTOS DA FE VARIEDADES LTDA ME","SUPER MIX COMERCIO VAREJISTA DE MERCADORIAS E SERVICOS LTDA EPP"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":0,"clientes":[]}],"clientesPositivados":[{"nome":"30 862 029 KELIANE GUIOMAR DE CARVALHO ME","industrias":[]},{"nome":"61 996 266 ELIZEU CARDOSO DA FONSECA ME","industrias":[]},{"nome":"COMERCIAL E F DE OLIVEIRA LTDA EPP","industrias":[]},{"nome":"FRUTOS DA FE VARIEDADES LTDA ME","industrias":["Scoobydoo"]},{"nome":"J S RAMOS LTDA ME","industrias":[]},{"nome":"M BRITO DE ALMEIDA ME","industrias":[]},{"nome":"S GUIOMAR PEREIRA ME","industrias":[]},{"nome":"SUPER MIX COMERCIO VAREJISTA DE MERCADORIAS E SERVICOS LTDA EPP","industrias":["Scoobydoo","Maná"]}]},{"cod":"39088","nome":"Gabrielly","cidade":"Salvaterra","metaVolume":50000,"faturado":46517.61,"definido":0,"liberado":0,"paradoVenc":468.42,"paradoLimite":0,"metaPosit":30,"posit":17,"metaInd":28,"ind":12,"grupo":"divisao","industrias":[{"nome":"Maná","meta":14,"tipo":"qtd","realizado":3,"clientes":["65 300 874 MICILENE DO SOCORRO FIGUEIREDO ALCANTARA ME","GERSON DO NASCIMENTO OLIVEIRA - ME","MARIO EDVALBER SOUZA DA SILVA"]},{"nome":"Sab. Johnson","meta":14,"tipo":"qtd","realizado":9,"clientes":["52 765 804 MARIETO SENA DA SILVA ME","56 943 763 LINDALVA DOS SANTOS PORTAL ME","64 515 823 GESSICA DO SOCORRO AVELAR PEREIRA DUTRA ME","65 300 874 MICILENE DO SOCORRO FIGUEIREDO ALCANTARA ME","DEUS E FIEL COMERCIO EM GERAL LTDA ME","EDIVALDO GARCIA GOMES 44964633268","JUCIVALDO BARBOSA RIBEIRO ME","MARIO DOS SANTOS BARBOSA 14014025268","PEDRO PAULO A MELO EPP"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":2750.93,"clientes":["ATACADAO ATUAL COMERCIO LTDA EPP","C MENDES SOARES EPP","JUCIVALDO BARBOSA RIBEIRO ME","M.DO S. BARROS DA CRUZ"]},{"nome":"Cless","meta":3000,"tipo":"valor","realizado":330.84,"clientes":["ATACADAO ATUAL COMERCIO LTDA EPP"]},{"nome":"Scoobydoo","meta":8000,"tipo":"valor","realizado":11453.26,"clientes":["48 297 150 LANDER SOZINHO NEVES ME","52 765 804 MARIETO SENA DA SILVA ME","ATACADAO ATUAL COMERCIO LTDA EPP","M.DO S. BARROS DA CRUZ"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":2462.3,"clientes":["64 515 823 GESSICA DO SOCORRO AVELAR PEREIRA DUTRA ME","ATACADAO ATUAL COMERCIO LTDA EPP","C MENDES SOARES EPP","EDIVALDO GARCIA GOMES 44964633268"]}],"clientesPositivados":[{"nome":"48 297 150 LANDER SOZINHO NEVES ME","industrias":["Scoobydoo"]},{"nome":"52 765 804 MARIETO SENA DA SILVA ME","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"56 943 763 LINDALVA DOS SANTOS PORTAL ME","industrias":["Sab. Johnson"]},{"nome":"64 515 823 GESSICA DO SOCORRO AVELAR PEREIRA DUTRA ME","industrias":["Sab. Johnson","Baston"]},{"nome":"65 300 874 MICILENE DO SOCORRO FIGUEIREDO ALCANTARA ME","industrias":["Sab. Johnson","Maná"]},{"nome":"ATACADAO ATUAL COMERCIO LTDA EPP","industrias":["Cless","Natu Hair","Scoobydoo","Baston"]},{"nome":"C MENDES SOARES EPP","industrias":["Natu Hair","Baston"]},{"nome":"DEUS E FIEL COMERCIO EM GERAL LTDA ME","industrias":["Sab. Johnson"]},{"nome":"EDIVALDO GARCIA GOMES 44964633268","industrias":["Sab. Johnson","Baston"]},{"nome":"GERSON DO NASCIMENTO OLIVEIRA - ME","industrias":["Maná"]},{"nome":"JOEL BARBOSA RIBEIRO 01871812259","industrias":[]},{"nome":"JUCIVALDO BARBOSA RIBEIRO ME","industrias":["Natu Hair","Sab. Johnson"]},{"nome":"M.DO S. BARROS DA CRUZ","industrias":["Natu Hair","Scoobydoo"]},{"nome":"MARIO DOS SANTOS BARBOSA 14014025268","industrias":["Sab. Johnson"]},{"nome":"MARIO EDVALBER SOUZA DA SILVA","industrias":["Maná"]},{"nome":"PEDRO PAULO A MELO EPP","industrias":["Sab. Johnson"]},{"nome":"Y S S COMERCIO LTDA ME","industrias":[]}]},{"cod":"38598","nome":"Eliziane","cidade":"Soure PA","metaVolume":50000,"faturado":39759.03,"definido":0,"liberado":1494.12,"paradoVenc":266.34,"paradoLimite":0,"metaPosit":35,"posit":21,"metaInd":28,"ind":16,"grupo":"divisao","industrias":[{"nome":"Maná","meta":14,"tipo":"qtd","realizado":5,"clientes":["56 605 890 MAURILIO CESAR SILVA SANTOS ME","A LEAL FIGUEIREDO","C. Q. FERREIRA JUNIOR COMERCIO","FARMA AVENIDA COMERCIO DE PRODUTOS FARMACEUTICO LTDA ME","J DO R DOS ANJOS"]},{"nome":"Sab. Johnson","meta":14,"tipo":"qtd","realizado":11,"clientes":["54 836 285 CELIA DINA DA SILVA ME","54 903 199 ANTONIO SERGIO RIBEIRO DA SILVA ME","A LEAL FIGUEIREDO","C. Q. FERREIRA JUNIOR COMERCIO","DEPOSITO SOUZA CORMECIO VAREJISTA LTDA ME","FARMA AVENIDA COMERCIO DE PRODUTOS FARMACEUTICO LTDA ME","J DO R DOS ANJOS","JACILENE PEREIRA GOMES","MANOEL GERALDO RIBEIRO DO CARMO EPP","MARAJOMED DISTRIBUIDORA LTDA ME","S. DO SOCORRO LEMOS SANTOS"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":171.36,"clientes":["J C FERREIRA ALVES EIRELI","JACILENE PEREIRA GOMES"]},{"nome":"Cless","meta":3000,"tipo":"valor","realizado":83.58,"clientes":["A S MOURA ME","FARMA AVENIDA COMERCIO DE PRODUTOS FARMACEUTICO LTDA ME","JACILENE PEREIRA GOMES","S. DO SOCORRO LEMOS SANTOS"]},{"nome":"Scoobydoo","meta":10000,"tipo":"valor","realizado":5630.77,"clientes":["22 352 325 MANUELA NUNES GONCALVES MENDES ME","A QUARESMA CARDOSO DROGARIA","C. Q. FERREIRA JUNIOR COMERCIO","FARMA AVENIDA COMERCIO DE PRODUTOS FARMACEUTICO LTDA ME","H PONTES COMERCIO E SERVICOS LTDA ME","MARAJOMED DISTRIBUIDORA LTDA ME","R ROCHA FURTADO"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":755.1,"clientes":["A QUARESMA CARDOSO DROGARIA","C. Q. FERREIRA JUNIOR COMERCIO","FARMA AVENIDA COMERCIO DE PRODUTOS FARMACEUTICO LTDA ME","JACILENE PEREIRA GOMES","S. DO SOCORRO LEMOS SANTOS"]}],"clientesPositivados":[{"nome":"22 352 325 MANUELA NUNES GONCALVES MENDES ME","industrias":["Scoobydoo"]},{"nome":"54 836 285 CELIA DINA DA SILVA ME","industrias":["Sab. Johnson"]},{"nome":"54 903 199 ANTONIO SERGIO RIBEIRO DA SILVA ME","industrias":["Sab. Johnson"]},{"nome":"56 605 890 MAURILIO CESAR SILVA SANTOS ME","industrias":["Maná"]},{"nome":"A LEAL FIGUEIREDO","industrias":["Sab. Johnson","Maná"]},{"nome":"A QUARESMA CARDOSO DROGARIA","industrias":["Scoobydoo","Baston"]},{"nome":"A S MOURA ME","industrias":["Cless"]},{"nome":"C B MONTEIRO","industrias":[]},{"nome":"C. Q. FERREIRA JUNIOR COMERCIO","industrias":["Sab. Johnson","Scoobydoo","Baston","Maná"]},{"nome":"DEPOSITO SOUZA CORMECIO VAREJISTA LTDA ME","industrias":["Sab. Johnson"]},{"nome":"FARMA AVENIDA COMERCIO DE PRODUTOS FARMACEUTICO LTDA ME","industrias":["Sab. Johnson","Cless","Scoobydoo","Baston","Maná"]},{"nome":"H PONTES COMERCIO E SERVICOS LTDA ME","industrias":["Scoobydoo"]},{"nome":"J C FERREIRA ALVES EIRELI","industrias":["Natu Hair"]},{"nome":"J DO R DOS ANJOS","industrias":["Sab. Johnson","Maná"]},{"nome":"JACILENE PEREIRA GOMES","industrias":["Sab. Johnson","Cless","Natu Hair","Baston"]},{"nome":"MANOEL GERALDO RIBEIRO DO CARMO EPP","industrias":["Sab. Johnson"]},{"nome":"MARAJOMED DISTRIBUIDORA LTDA ME","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"R ROCHA FURTADO","industrias":["Scoobydoo"]},{"nome":"RICARDO DIAS ABDON","industrias":[]},{"nome":"S. DO SOCORRO LEMOS SANTOS","industrias":["Sab. Johnson","Cless","Baston"]},{"nome":"SHEKINAH COMERCIO EM GERAL LTDA ME","industrias":[]}]},{"cod":"38829","nome":"Hellen","cidade":"Almeirim","metaVolume":50000,"faturado":38437.42,"definido":0,"liberado":1019.63,"paradoVenc":1545.97,"paradoLimite":3221.67,"metaPosit":20,"posit":12,"metaInd":24,"ind":10,"grupo":"geral","industrias":[{"nome":"Dabelle","meta":12,"tipo":"qtd","realizado":0,"clientes":[]},{"nome":"Sab. Johnson","meta":12,"tipo":"qtd","realizado":10,"clientes":["C M ALVARENGA COMERCIO","D DOS SANTOS FERREIRA ME","E. DO S. ALVARENGA LIMA COMERCIO","H M DA SILVA GONCALVES LTDA","JULIANE ROCHA DE OLIVEIRA PADARIA ME","LIMA & CALDEIRA LTDA","M DE J M ALVARENGA COMERCIO ME","M L BAIA COMERCIO VAREJISTA DE CARNES E PRODUTOS FARMACEUTICOS ME","MARCIJANI FURTADO DOS SANTOS 03090488264","SUPERLIDER COMERCIO DE ALIMENTOS EIRELI EPP"]},{"nome":"Natu Hair","meta":2000,"tipo":"valor","realizado":2716.73,"clientes":["C M ALVARENGA COMERCIO","H M DA SILVA GONCALVES LTDA","L P DA PAIXAO COMERCIO E SERVICOS LTDA ME","LIMA & CALDEIRA LTDA","M DE J M ALVARENGA COMERCIO ME","MARCIJANI FURTADO DOS SANTOS 03090488264"]},{"nome":"Dental Clean","meta":1500,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Scoobydoo","meta":8000,"tipo":"valor","realizado":1016.98,"clientes":["M L BAIA COMERCIO VAREJISTA DE CARNES E PRODUTOS FARMACEUTICOS ME","SUPERLIDER COMERCIO DE ALIMENTOS EIRELI EPP"]},{"nome":"Baston","meta":2000,"tipo":"valor","realizado":968.45,"clientes":["C M ALVARENGA COMERCIO","JULIANE ROCHA DE OLIVEIRA PADARIA ME","LIMA & CALDEIRA LTDA","M L BAIA COMERCIO VAREJISTA DE CARNES E PRODUTOS FARMACEUTICOS ME","SUPERLIDER COMERCIO DE ALIMENTOS EIRELI EPP"]}],"clientesPositivados":[{"nome":"67 136 621 VALDINEI OSORIO DE SOUZA ME","industrias":["Maná"]},{"nome":"C M ALVARENGA COMERCIO","industrias":["Cless","Sab. Johnson","Natu Hair","Maná","Baston"]},{"nome":"D DOS SANTOS FERREIRA ME","industrias":["Sab. Johnson","Maná"]},{"nome":"E. DO S. ALVARENGA LIMA COMERCIO","industrias":["Sab. Johnson"]},{"nome":"H M DA SILVA GONCALVES LTDA","industrias":["Sab. Johnson","Natu Hair"]},{"nome":"JULIANE ROCHA DE OLIVEIRA PADARIA ME","industrias":["Sab. Johnson","Maná","Baston"]},{"nome":"L P DA PAIXAO COMERCIO E SERVICOS LTDA ME","industrias":["Cless","Natu Hair","Maná"]},{"nome":"LIMA & CALDEIRA LTDA","industrias":["Sab. Johnson","Natu Hair","Baston"]},{"nome":"M DE J M ALVARENGA COMERCIO ME","industrias":["Sab. Johnson","Natu Hair"]},{"nome":"M L BAIA COMERCIO VAREJISTA DE CARNES E PRODUTOS FARMACEUTICOS ME","industrias":["Sab. Johnson","Scoobydoo","Baston"]},{"nome":"MARCIJANI FURTADO DOS SANTOS 03090488264","industrias":["Cless","Sab. Johnson","Natu Hair"]},{"nome":"SUPERLIDER COMERCIO DE ALIMENTOS EIRELI EPP","industrias":["Sab. Johnson","Scoobydoo","Baston"]}]},{"cod":"36256","nome":"Klebiane","cidade":"Cachoeira","metaVolume":50000,"faturado":35857.2,"definido":0,"liberado":324.96,"paradoVenc":0,"paradoLimite":0,"metaPosit":25,"posit":21,"metaInd":28,"ind":17,"grupo":"divisao","industrias":[{"nome":"Maná","meta":14,"tipo":"qtd","realizado":2,"clientes":["40 066 570 ELI SILVA SOUZA ME","R P FONSECA COMERCIO DE GENEROS ALIMENTICIOS LTDA ME"]},{"nome":"Sab. Johnson","meta":14,"tipo":"qtd","realizado":15,"clientes":[",LP COMERCIO VAR DE GEN ALIMEN  MINIMERCADOS EIRELI","40 066 570 ELI SILVA SOUZA ME","53 938 876 GABRIELA DIAS VIEIRA ME","67 889 020 TAIS FERREIRA PANTOJA ME","68 732 603 THAISSA GEMAQUE SERRAO ME","A DA C PEREIRA","E L DA GLORIA COMERCIO DE MERCADORIAS LTDA ME","FARMACIA FARMAJO LTDA ME","J BATISTA BELTRAO BRAGANCA","JEAN CLEBER SEABRA CABRAL 59014172249","JOSILENE DA PAIXAO SIQUEIRA 88972879215","M H LOPES SERRA COMERCIO LTDA EPP","R P FONSECA COMERCIO DE GENEROS ALIMENTICIOS LTDA ME","TEOTONIO FIGUEIREDO AVELAR 65762061272","TONIEL GONCALVES BARBOSA 00161103235"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":1576.2,"clientes":["A.M FAVACHO","FARMACIA FARMAJO LTDA ME","J BATISTA BELTRAO BRAGANCA","JOSILENE DA PAIXAO SIQUEIRA 88972879215","RAQUEL VIDAL PRADO - MERCANTIL VIDAL"]},{"nome":"Cless","meta":1500,"tipo":"valor","realizado":1334.64,"clientes":["COSTA SILVA COMERCIO DE CARNES LTDA ME","E L DA GLORIA COMERCIO DE MERCADORIAS LTDA ME","RAQUEL VIDAL PRADO - MERCANTIL VIDAL","TEOTONIO FIGUEIREDO AVELAR 65762061272","TONIEL GONCALVES BARBOSA 00161103235"]},{"nome":"Scoobydoo","meta":6000,"tipo":"valor","realizado":1357.38,"clientes":["68 732 603 THAISSA GEMAQUE SERRAO ME","A.M FAVACHO","D M PORTAL COMERCIO E SERVICOS DE GENEROS ALIMENTICIOS LTDA ME","FARMACIA FARMAJO LTDA ME","JOSILENE DA PAIXAO SIQUEIRA 88972879215"]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":839.16,"clientes":["COSTA SILVA COMERCIO DE CARNES LTDA ME","JOSILENE DA PAIXAO SIQUEIRA 88972879215","TONIEL GONCALVES BARBOSA 00161103235"]}],"clientesPositivados":[{"nome":",LP COMERCIO VAR DE GEN ALIMEN  MINIMERCADOS EIRELI","industrias":["Sab. Johnson"]},{"nome":"40 066 570 ELI SILVA SOUZA ME","industrias":["Sab. Johnson","Maná"]},{"nome":"53 938 876 GABRIELA DIAS VIEIRA ME","industrias":["Sab. Johnson"]},{"nome":"67 889 020 TAIS FERREIRA PANTOJA ME","industrias":["Sab. Johnson"]},{"nome":"68 732 603 THAISSA GEMAQUE SERRAO ME","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"A DA C PEREIRA","industrias":["Sab. Johnson"]},{"nome":"A.M FAVACHO","industrias":["Natu Hair","Scoobydoo"]},{"nome":"COSTA SILVA COMERCIO DE CARNES LTDA ME","industrias":["Cless","Baston"]},{"nome":"D M PORTAL COMERCIO E SERVICOS DE GENEROS ALIMENTICIOS LTDA ME","industrias":["Scoobydoo"]},{"nome":"E L DA GLORIA COMERCIO DE MERCADORIAS LTDA ME","industrias":["Cless","Sab. Johnson"]},{"nome":"FARMACIA FARMAJO LTDA ME","industrias":["Sab. Johnson","Natu Hair","Scoobydoo"]},{"nome":"I BELTRAO BARBOSA","industrias":[]},{"nome":"J BATISTA BELTRAO BRAGANCA","industrias":["Sab. Johnson","Natu Hair"]},{"nome":"JEAN CLEBER SEABRA CABRAL 59014172249","industrias":["Sab. Johnson"]},{"nome":"JOSILENE DA PAIXAO SIQUEIRA 88972879215","industrias":["Sab. Johnson","Natu Hair","Scoobydoo","Baston"]},{"nome":"M H LOPES SERRA COMERCIO LTDA EPP","industrias":["Sab. Johnson"]},{"nome":"R P FONSECA COMERCIO DE GENEROS ALIMENTICIOS LTDA ME","industrias":["Sab. Johnson","Maná"]},{"nome":"RAQUEL VIDAL PRADO - MERCANTIL VIDAL","industrias":["Cless","Natu Hair"]},{"nome":"T DO S L DE AVELAR","industrias":[]},{"nome":"TEOTONIO FIGUEIREDO AVELAR 65762061272","industrias":["Cless","Sab. Johnson"]},{"nome":"TONIEL GONCALVES BARBOSA 00161103235","industrias":["Cless","Sab. Johnson","Baston"]}]},{"cod":"39948","nome":"Ronilson","cidade":"Portel","metaVolume":50000,"faturado":31576.68,"definido":0,"liberado":2827.05,"paradoVenc":0,"paradoLimite":0,"metaPosit":25,"posit":26,"metaInd":28,"ind":24,"grupo":"divisao","industrias":[{"nome":"Maná","meta":14,"tipo":"qtd","realizado":8,"clientes":["53 958 487 GENESIO DO SOCORRO FREITAS DA SILVA ME","67 921 597 ADILSON MAGNO ME","ABRAAO SILVA GUIMARAES 85433608204","D S DO CARMO COMERCIO DE VESTUARIO EPP","ELITO P PACHECO COMERCIO DE GENEROS ALIMENTICIOS ME","PAULO V B DA ROCHA COMERCIO DE ELETRODOMESTICOS EPP","ROBERTO TAVEIRA FIALHO 91310369291","ZELINO G DE OLIVEIRA COMERCIO DE GENEROS ALIMENTICIOS EPP"]},{"nome":"Sab. Johnson","meta":14,"tipo":"qtd","realizado":16,"clientes":["51 527 316 MARCIANO PRIMAVERA DOS SANTOS ME","54 144 866 TAILANY SOARES RODRIGUES ME","58 806 967 ALMIR DO SOCORRO SATIRO DA SILVA ME","61 259 265 GRACILENE SILVA MACEDO ME","65 940 112 ROMULO HENRIQUE SANTOS DOS SANTOS ME","67 921 597 ADILSON MAGNO ME","ABRAAO SILVA GUIMARAES 85433608204","B R EVANGELISTA COMERCIO DE BEBIDAS ME","C A FERREIRA ME","D C PANTOJA COMERCIO DE ALIMENTOS LTDA EPP","D S DO CARMO COMERCIO DE VESTUARIO EPP","E VANDER DOS SANTOS MORAES ME","ELITO P PACHECO COMERCIO DE GENEROS ALIMENTICIOS ME","I DOS S LOBATO LTDA EPP","JEFFERSON G DE SOUZA EPP","PAULO V B DA ROCHA COMERCIO DE ELETRODOMESTICOS EPP"]},{"nome":"Natu Hair","meta":2000,"tipo":"valor","realizado":2015.86,"clientes":["57 993 814 DIEGO FURTADO TENORIO ME","67 921 597 ADILSON MAGNO ME","A CLAUDIA GONCALVES DE ALMEIDA SOARES COMERCIO DE ARMARINHO ME","A L FRANCO FERREIRA COMERCIO ME","B R EVANGELISTA COMERCIO DE BEBIDAS ME","ELITO P PACHECO COMERCIO DE GENEROS ALIMENTICIOS ME","I DOS S LOBATO LTDA EPP","MERCANTIL SAO JOAO LTDA EPP","PAULO V B DA ROCHA COMERCIO DE ELETRODOMESTICOS EPP","R DA C LOPES COMERCIO DE GENEROS ALIMENTICIOS ME","ZELINO G DE OLIVEIRA COMERCIO DE GENEROS ALIMENTICIOS EPP"]},{"nome":"Cless","meta":1500,"tipo":"valor","realizado":363.91,"clientes":["65 940 112 ROMULO HENRIQUE SANTOS DOS SANTOS ME","67 921 597 ADILSON MAGNO ME","A L FRANCO FERREIRA COMERCIO ME","ABRAAO SILVA GUIMARAES 85433608204","D S DO CARMO COMERCIO DE VESTUARIO EPP","MANOEL MARINHO DIAS FILHO 71038473209","PAULO V B DA ROCHA COMERCIO DE ELETRODOMESTICOS EPP","ZELINO G DE OLIVEIRA COMERCIO DE GENEROS ALIMENTICIOS EPP"]},{"nome":"Scoobydoo","meta":5000,"tipo":"valor","realizado":2066.1,"clientes":["54 144 866 TAILANY SOARES RODRIGUES ME","67 921 597 ADILSON MAGNO ME","ABRAAO SILVA GUIMARAES 85433608204","B R EVANGELISTA COMERCIO DE BEBIDAS ME","C A FERREIRA ME","ELITO P PACHECO COMERCIO DE GENEROS ALIMENTICIOS ME","PAULO V B DA ROCHA COMERCIO DE ELETRODOMESTICOS EPP"]},{"nome":"Baston","meta":2000,"tipo":"valor","realizado":2245.57,"clientes":["51 527 316 MARCIANO PRIMAVERA DOS SANTOS ME","53 958 487 GENESIO DO SOCORRO FREITAS DA SILVA ME","A L FRANCO FERREIRA COMERCIO ME","ABRAAO SILVA GUIMARAES 85433608204","C A FERREIRA ME","E VANDER DOS SANTOS MORAES ME","ELITO P PACHECO COMERCIO DE GENEROS ALIMENTICIOS ME","R DA C LOPES COMERCIO DE GENEROS ALIMENTICIOS ME","ROBERTO TAVEIRA FIALHO 91310369291"]}],"clientesPositivados":[{"nome":"51 527 316 MARCIANO PRIMAVERA DOS SANTOS ME","industrias":["Sab. Johnson","Baston"]},{"nome":"53 958 487 GENESIO DO SOCORRO FREITAS DA SILVA ME","industrias":["Baston","Maná"]},{"nome":"54 144 866 TAILANY SOARES RODRIGUES ME","industrias":["Sab. Johnson","Scoobydoo"]},{"nome":"57 993 814 DIEGO FURTADO TENORIO ME","industrias":["Natu Hair"]},{"nome":"58 806 967 ALMIR DO SOCORRO SATIRO DA SILVA ME","industrias":["Sab. Johnson"]},{"nome":"61 259 265 GRACILENE SILVA MACEDO ME","industrias":["Sab. Johnson"]},{"nome":"65 940 112 ROMULO HENRIQUE SANTOS DOS SANTOS ME","industrias":["Sab. Johnson","Cless"]},{"nome":"67 921 597 ADILSON MAGNO ME","industrias":["Sab. Johnson","Cless","Natu Hair","Scoobydoo","Maná"]},{"nome":"A CLAUDIA GONCALVES DE ALMEIDA SOARES COMERCIO DE ARMARINHO ME","industrias":["Natu Hair"]},{"nome":"A L FRANCO FERREIRA COMERCIO ME","industrias":["Cless","Natu Hair","Baston"]},{"nome":"ABRAAO SILVA GUIMARAES 85433608204","industrias":["Sab. Johnson","Cless","Baston","Maná","Scoobydoo"]},{"nome":"B R EVANGELISTA COMERCIO DE BEBIDAS ME","industrias":["Sab. Johnson","Natu Hair","Scoobydoo"]},{"nome":"C A FERREIRA ME","industrias":["Sab. Johnson","Baston","Scoobydoo"]},{"nome":"D C PANTOJA COMERCIO DE ALIMENTOS LTDA EPP","industrias":["Sab. Johnson"]},{"nome":"D S DO CARMO COMERCIO DE VESTUARIO EPP","industrias":["Sab. Johnson","Cless","Maná"]},{"nome":"E VANDER DOS SANTOS MORAES ME","industrias":["Sab. Johnson","Baston"]},{"nome":"ELITO P PACHECO COMERCIO DE GENEROS ALIMENTICIOS ME","industrias":["Sab. Johnson","Natu Hair","Baston","Scoobydoo","Maná"]},{"nome":"I DOS S LOBATO LTDA EPP","industrias":["Sab. Johnson","Natu Hair"]},{"nome":"JEFFERSON G DE SOUZA EPP","industrias":["Sab. Johnson"]},{"nome":"MANOEL MARINHO DIAS FILHO 71038473209","industrias":["Cless"]},{"nome":"MERCANTIL SAO JOAO LTDA EPP","industrias":["Natu Hair"]},{"nome":"PAULO V B DA ROCHA COMERCIO DE ELETRODOMESTICOS EPP","industrias":["Sab. Johnson","Cless","Natu Hair","Scoobydoo","Maná"]},{"nome":"R DA C LOPES COMERCIO DE GENEROS ALIMENTICIOS ME","industrias":["Natu Hair","Baston"]},{"nome":"ROBERTO TAVEIRA FIALHO 91310369291","industrias":["Baston","Maná"]},{"nome":"SILVANA DA SILVA BRASIL 04477523246","industrias":[]},{"nome":"ZELINO G DE OLIVEIRA COMERCIO DE GENEROS ALIMENTICIOS EPP","industrias":["Cless","Natu Hair","Maná"]}]},{"cod":"41530","nome":"Maria Eduarda","cidade":"Porto de Moz","metaVolume":60000,"faturado":10619.67,"definido":0,"liberado":2632.02,"paradoVenc":0,"paradoLimite":0,"metaPosit":30,"posit":7,"metaInd":32,"ind":1,"grupo":"geral","industrias":[{"nome":"Dabelle","meta":16,"tipo":"qtd","realizado":0,"clientes":[]},{"nome":"Sab. Johnson","meta":16,"tipo":"qtd","realizado":1,"clientes":["54.728.146 FRANCISCO LUCIO SOARES DO NASCIMENTO"]},{"nome":"Natu Hair","meta":2500,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Dental Clean","meta":2000,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Scoobydoo","meta":10000,"tipo":"valor","realizado":0,"clientes":[]},{"nome":"Baston","meta":2500,"tipo":"valor","realizado":0,"clientes":[]}],"clientesPositivados":[{"nome":"54.728.146 FRANCISCO LUCIO SOARES DO NASCIMENTO","industrias":["Sab. Johnson"]},{"nome":"C A P DA FONSECA LTDA ME","industrias":[]},{"nome":"DENIS ROSCY RODRIGUES FERNANDES 01181544270","industrias":[]},{"nome":"E. DE CASTRO PINHEIRO","industrias":[]},{"nome":"FARMACIA AZEVEDO LTDA EPP","industrias":[]},{"nome":"M DA S PEREIRA FARMACIA LTDA ME","industrias":[]},{"nome":"M GONCALVES BRITO EIRELI","industrias":[]}]}];
+const ADMIN_CODE = '331';
+const SESSION_KEY = 'painelrca870_session';
+let adminMode = false;
+let pillSel = {fat:true, def:false, lib:false, pv:false, pl:false};
+var viewState = {t:'team'};
+var IND_MAP = {"Dabelle":"BERGAMO COMERCIO LTDA","Sab. Johnson":"JNTL CONSUMER HEALTH BRAZIL LTDA","Natu Hair":"ROMA DISTRIBUIDORA DE PRODUTOS DE BELEZA","Dental Clean":"ATLANTIS DISTRIBUIDORA DE PRODUTOS DE HIGIENE LTD","Scoobydoo":"CCM INDUSTRIA E COMERC DE PROD DESCAR SA","Baston":"BASTON DO BRASIL PRODUTOS QUIMICOS LTDA","Cless":"CLESS COMERCIO DE COSMETICOS S.A."};
+var META_EQ = {volume:0, posit:0, ind:{}};
+var MANA_NAMES = ["MANA COMERCIO DE PAPEIS EIRELI","PRODUTOS MANA INDUSTRIA E COMERCIO DE EMB EIRELI"];
+
+function fmt(n){ return (Number(n)||0).toLocaleString('pt-BR',{maximumFractionDigits:0}); }
+
+function pctOf(real,meta){ return meta>0 ? (real/meta*100) : 0; }
+
+function barColor(p){ return p>=100?'var(--green)':(p>=70?'var(--yellow)':'var(--red)'); }
+
+function toggleAdminMode(){
+  adminMode = !adminMode;
+  document.getElementById('gateTitle').textContent = adminMode? 'Acesso interno' : 'Confira seu desempenho';
+  document.getElementById('gateSub').textContent = adminMode? 'Informe o código de acesso da supervisão.' : 'Digite seu código de RCA para ver metas, positivação e vendas por indústria.';
+  document.getElementById('codeInput').placeholder = adminMode? 'PIN' : 'Seu código';
+  document.getElementById('gateBtn').textContent = adminMode? 'Entrar' : 'Ver meu desempenho';
+  document.getElementById('switchLink').textContent = adminMode? 'Voltar' : 'Acesso interno';
+  document.getElementById('gateErr').textContent='';
+}
+
+function meuPin(cod){ try{ return localStorage.getItem('pin_'+cod)||''; }catch(e){ return ''; } }
+function salvarMeuPin(cod, v){ try{ localStorage.setItem('pin_'+cod, v); }catch(e){} }
+
+function tryLogin(){
+  const v = document.getElementById('codeInput').value.trim();
+  const err = document.getElementById('gateErr');
+  const pinAdmin = meuPin('admin');
+  const adminOk = pinAdmin ? v===pinAdmin : v===ADMIN_CODE;
+  if(adminOk){
+    try{ sessionStorage.setItem(SESSION_KEY, ADMIN_CODE); }catch(e){}
+    boot(ADMIN_CODE);
+    return;
+  }
+  const r = data.find(function(x){
+    if(v.length===0) return false;
+    const pin = meuPin(x.cod);
+    return pin ? v===pin : v===x.cod;
+  });
+  if(r){
+    if(r.bloqueado){ err.textContent = 'Acesso bloqueado. Fale com a supervisão.'; return; }
+    try{ sessionStorage.setItem(SESSION_KEY, r.cod); }catch(e){}
+    boot(r.cod);
+    return;
+  }
+  err.textContent = 'Código não encontrado. Confira com a supervisão.';
+}
+
+function abrirTrocaSenha(){
+  const cod = sessionStorage.getItem(SESSION_KEY);
+  const isAdmin = cod===ADMIN_CODE;
+  const tam = isAdmin ? 3 : 5;
+  const box = document.getElementById('senhaBox');
+  box.style.display = box.style.display==='none' ? 'block' : 'none';
+  box.innerHTML = '<div class="note" style="margin-bottom:6px">Escolha uma senha nova de '+tam+' números. A partir de agora, o código antigo ('+(isAdmin?ADMIN_CODE:cod)+') deixa de funcionar <b>neste aparelho/navegador</b> — só a senha nova entra aqui. Em outro aparelho, o código antigo continua valendo até ser trocado lá também. Se esquecer a senha nova, limpe os dados do site neste navegador para o código antigo voltar a funcionar.</div>'
+    + '<input type="text" id="novaSenha" inputmode="numeric" maxlength="'+tam+'" placeholder="'+tam+' números" style="padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-family:\'IBM Plex Mono\',monospace;width:120px">'
+    + ' <button class="trocar" onclick="confirmarTrocaSenha('+(isAdmin?'true':'false')+')">Salvar</button>'
+    + '<div class="note" id="senhaMsg" style="margin-top:6px"></div>';
+}
+
+function confirmarTrocaSenha(isAdmin){
+  const cod = sessionStorage.getItem(SESSION_KEY);
+  const tam = isAdmin ? 3 : 5;
+  const v = document.getElementById('novaSenha').value.trim();
+  const msg = document.getElementById('senhaMsg');
+  if(!/^[0-9]+$/.test(v) || v.length!==tam){ msg.textContent = 'Digite exatamente '+tam+' números.'; msg.style.color='var(--red)'; return; }
+  salvarMeuPin(isAdmin?'admin':cod, v);
+  msg.style.color='var(--green)';
+  msg.textContent = 'Senha salva neste aparelho! Use '+v+' da próxima vez que entrar por aqui.';
+}
+
+function logout(){
+  try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
+  document.getElementById('gate').style.display='block';
+  document.getElementById('app').style.display='none';
+  document.getElementById('trocarBtn').style.display='none';
+  document.getElementById('senhaBtn').style.display='none';
+  const sb=document.getElementById('senhaBox'); if(sb){sb.style.display='none'; sb.innerHTML='';}
+  document.getElementById('updLine').style.display='none';
+  document.getElementById('hdrSub').textContent = 'Equipe 870 · Perfumaria Ilhas';
+  document.getElementById('codeInput').value='';
+  document.getElementById('gateErr').textContent='';
+}
+
+function boot(code){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('trocarBtn').style.display='inline';
+  document.getElementById('senhaBtn').style.display='inline';
+  document.getElementById('updLine').style.display='block';
+  document.getElementById('updDate').textContent = LAST_UPDATE;
+  if(code===ADMIN_CODE){ document.getElementById('hdrSub').textContent='Distribuição PA · CD 331'; renderTeam(); }
+  else { document.getElementById('hdrSub').textContent='Equipe 870 · Perfumaria Ilhas'; renderPersonal(data.find(r=>r.cod===code)); }
+}
+
+function vol(r){ return pillSum({fat:r.faturado, def:r.definido, lib:r.liberado, pv:r.paradoVenc, pl:r.paradoLimite}); }
+
+function stKeys(){ return ['fat','def','lib','pv','pl'].filter(function(k){ return pillSel[k]; }); }
+
+function clientesSel(r){
+  var L = r.clientesPositivados || [];
+  if(!L.length || !L[0].st) return pillSel.fat ? L : [];
+  var ks = stKeys();
+  return L.filter(function(c){ return c.st.some(function(k){ return ks.indexOf(k)>=0; }); });
+}
+
+function positSel(r){
+  var L = r.clientesPositivados || [];
+  if(!L.length || !L[0].st) return pillSel.fat ? (r.posit||0) : 0;
+  return clientesSel(r).length;
+}
+
+function indSel(i){
+  var ps = i.ps || {}; var set = {}; var v = 0;
+  if(pillSel.fat){ v += (i.tipo==='qtd' ? 0 : (i.realizado||0)); (i.clientes||[]).forEach(function(c){ set[c]=true; }); }
+  ['def','lib','pv','pl'].forEach(function(k){
+    if(pillSel[k] && ps[k]){ v += ps[k].v; ps[k].c.forEach(function(c){ set[c]=true; }); }
+  });
+  var cl = Object.keys(set).sort();
+  return {realizado: (i.tipo==='qtd' ? cl.length : v), clientes: cl};
+}
+
+function positBreakdownHTML(rs){
+  var c = {fat:0,def:0,lib:0,pv:0,pl:0,all:0};
+  rs.forEach(function(r){
+    var L = r.clientesPositivados || [];
+    if(L.length && L[0].st){ L.forEach(function(x){ c.all++; x.st.forEach(function(k){ c[k]++; }); }); }
+    else { c.fat += r.posit||0; c.all += r.posit||0; }
+  });
+  return '<div class="note" style="margin-top:10px;line-height:1.8"><b>Clientes por situação</b><br>'
+    + 'Faturado: <b>'+fmt(c.fat)+'</b> \u00b7 Definido: <b>'+fmt(c.def)+'</b> \u00b7 Liberado: <b>'+fmt(c.lib)+'</b> \u00b7 Vencido: <b>'+fmt(c.pv)+'</b> \u00b7 Limite: <b>'+fmt(c.pl)+'</b><br>'
+    + 'Total sem repetir cliente: <b>'+fmt(c.all)+'</b> <span style="opacity:.7">(um cliente pode estar em mais de uma situação)</span></div>';
+}
+
+function pillsHTML(t){
+  return '<div class="pills">'
+    + '<span class="pill mono'+(pillSel.fat?' active':'')+'" onclick="togglePill(\'fat\')">Faturado R$ '+fmt(t.fat)+'</span>'
+    + '<span class="pill mono'+(pillSel.def?' active':'')+'" onclick="togglePill(\'def\')">Definido R$ '+fmt(t.def)+'</span>'
+    + '<span class="pill mono'+(pillSel.lib?' active':'')+'" onclick="togglePill(\'lib\')">Liberado R$ '+fmt(t.lib)+'</span>'
+    + '<span class="pill mono'+(pillSel.pv?' active':'')+'" style="color:'+(pillSel.pv?'#fff':'var(--red)')+'" onclick="togglePill(\'pv\')">Vencido R$ '+fmt(t.pv)+'</span>'
+    + '<span class="pill mono'+(pillSel.pl?' active':'')+'" style="color:'+(pillSel.pl?'#fff':'var(--yellow)')+'" onclick="togglePill(\'pl\')">Limite R$ '+fmt(t.pl)+'</span>'
+    + '<span class="pill mono" onclick="togglePill(\'todos\')">Todos</span>'
+    + '</div>';
+}
+
+function rerender(){
+  if(viewState.t==='p'){ var r = data.find(function(x){ return x.cod===viewState.cod; }); renderPersonal(r, viewState.fromTeam); }
+  else renderTeam();
+}
+
+const PREMIO_INDUSTRIA = 340;
+const PCT_FIXO = 0.01;
+const PCT_VOL = 0.003;
+const PCT_POSIT = 0.008;
+
+function fmtPct(p){ return (p*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%'; }
+
+function atualizarTotaisMetas(){
+  var el = document.getElementById('metasTot'); if(!el) return;
+  var v=0, p=0, ind={};
+  data.forEach(function(r){
+    var a=document.getElementById('meta_vol_'+r.cod), b=document.getElementById('meta_pos_'+r.cod);
+    v += parseNum(a?a.value:r.metaVolume); p += parseNum(b?b.value:r.metaPosit);
+    r.industrias.forEach(function(i,idx){
+      var c=document.getElementById('meta_ind_'+r.cod+'_'+idx);
+      if(!ind[i.nome]) ind[i.nome]={t:i.tipo,s:0};
+      ind[i.nome].s += parseNum(c?c.value:i.meta);
+    });
+  });
+  el.innerHTML = 'Soma dos RCAs: volume R$ '+fmt(v)+' \u00b7 positiva\u00e7\u00e3o '+fmt(p)+' clientes<br>'
+    + Object.keys(ind).map(function(n){ return n+': '+(ind[n].t==='qtd'?fmt(ind[n].s)+' clientes':'R$ '+fmt(ind[n].s)); }).join(' \u00b7 ');
+}
+
+function pct1(x){ return x.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; }
+
+function faltaHTML(real, meta, tipo){
+  real = real||0; meta = meta||0;
+  if(!(meta>0)) return '';
+  const p = pctOf(real, meta);
+  const un = function(n){ return tipo==='qtd' ? fmt(n)+' cliente(s)' : 'R$ '+fmt(n); };
+  if(real>=meta) return '<div class="note" style="color:var(--green);margin-top:6px">\u2714 Meta batida \u00b7 atingido '+pct1(p)+' \u00b7 '+un(real-meta)+' acima da meta</div>';
+  return '<div class="note" style="margin-top:6px">Atingido <b>'+pct1(p)+'</b> ('+un(real)+') \u00b7 Falta <b style="color:var(--red)">'+pct1(100-p)+'</b> ('+un(meta-real)+')</div>';
+}
+
+function calcComissao(r){
+  const base = r.faturado;
+  const volOk = r.metaVolume>0 && base >= r.metaVolume;
+  const positOk = r.metaPosit>0 && (r.posit||0) >= r.metaPosit;
+  const pctTotal = PCT_FIXO + (volOk?PCT_VOL:0) + (positOk?PCT_POSIT:0);
+  const valorPct = base * pctTotal;
+  const industriasBatidas = (r.industrias||[]).filter(function(i){ return (i.meta>0) && (i.realizado||0) >= i.meta; });
+  const premioIndustrias = industriasBatidas.length * PREMIO_INDUSTRIA;
+  return {
+    base: base, volOk: volOk, positOk: positOk,
+    pctFixo: PCT_FIXO, pctVol: volOk?PCT_VOL:0, pctPosit: positOk?PCT_POSIT:0, pctTotal: pctTotal,
+    valorPct: valorPct,
+    industriasBatidas: industriasBatidas.map(function(i){return i.nome;}),
+    premioIndustrias: premioIndustrias,
+    total: valorPct + premioIndustrias
+  };
+}
+
+function pillSum(tot){
+  let s = 0;
+  if(pillSel.fat) s += tot.fat;
+  if(pillSel.def) s += tot.def;
+  if(pillSel.lib) s += tot.lib;
+  if(pillSel.pv) s += tot.pv;
+  if(pillSel.pl) s += tot.pl;
+  return s;
+}
+
+function pillLabel(){
+  const parts = [];
+  if(pillSel.fat) parts.push('Faturado');
+  if(pillSel.def) parts.push('Definido');
+  if(pillSel.lib) parts.push('Liberado');
+  if(pillSel.pv) parts.push('Vencido');
+  if(pillSel.pl) parts.push('Limite');
+  if(parts.length===0) return 'Nada selecionado';
+  if(parts.length===5) return 'Todos';
+  return parts.join(' + ');
+}
+
+function togglePill(key){
+  if(key==='todos'){
+    const allOn = pillSel.fat && pillSel.def && pillSel.lib && pillSel.pv && pillSel.pl;
+    const v = !allOn;
+    pillSel = {fat:v, def:v, lib:v, pv:v, pl:v};
+  } else {
+    pillSel[key] = !pillSel[key];
+  }
+  rerender();
+}
+
+function renderPersonal(r, fromTeam){
+  viewState = {t:'p', cod:r.cod, fromTeam:!!fromTeam};
+  const app = document.getElementById('app');
+  const v = vol(r);
+  const pVol = pctOf(v, r.metaVolume);
+  const pPosit = pctOf(positSel(r), r.metaPosit);
+  const parado = r.paradoVenc+r.paradoLimite;
+  app.innerHTML = '<div class="hello">'+r.nome+'</div>'
+    + (fromTeam?'<span class="backlink" onclick="renderTeam()" style="display:block;margin-bottom:6px">← voltar para a equipe</span>':'')
+    + '<div class="sub">'+(r.cidade||'—')+' · código '+r.cod+'</div>'
+    + '<div class="section-title">Desempenho do mês</div>'
+    + pillsHTML({fat:r.faturado, def:r.definido, lib:r.liberado, pv:r.paradoVenc, pl:r.paradoLimite})
+    + '<div class="bigcard"><div class="t">'+pillLabel()+' · '+r.nome+'</div>'
+    + '<div class="row"><span class="num mono">R$ '+fmt(v)+'</span><span class="meta">/ meta R$ '+fmt(r.metaVolume)+'</span></div>'
+    + '<div class="bar"><div style="width:'+Math.min(pVol,100)+'%;background:'+barColor(pVol)+'"></div></div>'
+    + '<div class="note">'+fmt(r.faturado)+' faturado · '+fmt(r.definido)+' definido · '+fmt(r.liberado)+' liberado</div>'+faltaHTML(v,r.metaVolume,'rs')+'</div>'
+    + '<div class="bigcard"><div class="t">Positivação · '+r.nome+'</div>'
+    + '<div class="row"><span class="num mono">'+fmt(positSel(r))+'</span><span class="meta">/ meta '+fmt(r.metaPosit)+' clientes</span></div>'
+    + '<div class="bar"><div style="width:'+Math.min(pPosit,100)+'%;background:'+barColor(pPosit)+'"></div></div>'+faltaHTML(positSel(r),r.metaPosit,'qtd')+'<div class="note" style="margin-top:4px">Contando: '+pillLabel()+'</div>'+positBreakdownHTML([r])
+    + '<details style="margin-top:10px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Ver clientes atendidos ('+clientesSel(r).length+')</summary>'+clientListHTML(clientesSel(r))+'</details></div>'
+    + (parado>0?('<div class="bigcard"><div class="t" style="color:var(--red)">Vendas paradas</div><div class="row"><span class="num mono" style="color:var(--red)">R$ '+fmt(parado)+'</span></div><div class="note">'+fmt(r.paradoVenc)+' por título vencido · '+fmt(r.paradoLimite)+' por limite</div></div>'):'')
+    + '<div class="section-title">Indústria foco · '+r.nome+'</div>'
+    + r.industrias.map(function(i0){
+        const i = Object.assign({}, i0, indSel(i0));
+        const p = pctOf(i.realizado||0, i.meta);
+        return '<div class="indcard"><div class="h"><b>'+i.nome.toUpperCase()+'</b><span class="badge '+(i.tipo==='qtd'?'g':'a')+'">'+(i.tipo==='qtd'?'POSITIVAÇÃO':'VENDA')+'</span></div>'
+          + '<div class="row" style="margin-top:8px"><span class="num mono" style="font-size:20px">'+(i.tipo==='qtd'?fmt(i.realizado||0)+' clientes':'R$ '+fmt(i.realizado||0))+'</span><span class="meta">/ meta '+(i.tipo==='qtd'?fmt(i.meta)+' clientes':'R$ '+fmt(i.meta))+'</span></div>'
+          + '<div class="bar"><div style="width:'+Math.min(p,100)+'%;background:'+barColor(p)+'"></div></div>'+faltaHTML(i.realizado,i.meta,i.tipo)
+          + '<details style="margin-top:10px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Ver clientes atendidos ('+(i.clientes?i.clientes.length:0)+')</summary>'+clientListHTML(i.clientes)+'</details></div>';
+      }).join('')
+    + (function(){
+        const c = calcComissao(r);
+        return '<div class="section-title">Comissão estimada · '+r.nome+' (só faturado)</div>'
+          + '<div class="bigcard"><div class="row"><span class="num mono" style="color:var(--green)">R$ '+fmt(c.total)+'</span></div>'
+          + '<div class="note" style="margin-top:8px">Fixo ('+fmtPct(c.pctFixo)+'): R$ '+fmt(r.faturado*c.pctFixo)+'</div>'
+          + '<div class="note" style="'+(c.volOk?'':'opacity:.5')+'">Meta volume '+(c.volOk?'batida':'não batida')+' ('+fmtPct(PCT_VOL)+'): R$ '+fmt(r.faturado*(c.volOk?PCT_VOL:0))+'</div>'
+          + '<div class="note" style="'+(c.positOk?'':'opacity:.5')+'">Positivação '+(c.positOk?'batida':'não batida')+' ('+fmtPct(PCT_POSIT)+'): R$ '+fmt(r.faturado*(c.positOk?PCT_POSIT:0))+'</div>'
+          + '<div class="note" style="margin-top:6px">Subtotal '+fmtPct(c.pctTotal)+' sobre R$ '+fmt(c.base)+' de faturado: <b>R$ '+fmt(c.valorPct)+'</b></div>'
+          + '<div class="note" style="margin-top:10px">Prêmio indústria foco (R$ '+PREMIO_INDUSTRIA+' cada): <b>R$ '+fmt(c.premioIndustrias)+'</b></div>'
+          + (c.industriasBatidas.length ? '<div class="note">Bateu: '+c.industriasBatidas.join(', ')+'</div>' : '<div class="note">Nenhuma indústria foco batida ainda</div>')
+          + '</div>';
+      })();
+}
+
+function renderTeam(){
+  viewState = {t:'team'};
+  const app = document.getElementById('app');
+  let tot = {fat:0,def:0,lib:0,pv:0,pl:0,metaVol:0,vol:0,posit:0,metaPosit:0,ind:0};
+  data.forEach(function(r){ const v=vol(r); tot.fat+=r.faturado; tot.def+=r.definido; tot.lib+=r.liberado; tot.pv+=r.paradoVenc; tot.pl+=r.paradoLimite; tot.metaVol+=r.metaVolume; tot.vol+=v; tot.posit+=positSel(r); tot.metaPosit+=r.metaPosit; tot.ind+=r.ind; });
+  tot.somaVol = tot.metaVol; tot.somaPosit = tot.metaPosit;
+  if(META_EQ.volume>0) tot.metaVol = META_EQ.volume;
+  if(META_EQ.posit>0) tot.metaPosit = META_EQ.posit;
+  const pVolT = pctOf(tot.vol, tot.metaVol), pPositT = pctOf(tot.posit, tot.metaPosit);
+
+  const indAgg = {};
+  data.forEach(function(r){ r.industrias.forEach(function(i){ if(!indAgg[i.nome]) indAgg[i.nome]={meta:0,tipo:i.tipo,realizado:0}; indAgg[i.nome].meta+=i.meta; indAgg[i.nome].realizado+=indSel(i).realizado; }); });
+
+  Object.keys(indAgg).forEach(function(n){ indAgg[n].soma = indAgg[n].meta; if(META_EQ.ind && META_EQ.ind[n]>0) indAgg[n].meta = META_EQ.ind[n]; });
+
+  const rankVol = data.slice().sort(function(a,b){ return pctOf(vol(b),b.metaVolume) - pctOf(vol(a),a.metaVolume); });
+
+  let html = '<span class="backlink" onclick="logout()">← trocar código</span>'
+    + '<h2 style="font-size:18px;margin:8px 0 2px">Panorama geral da equipe</h2>'
+    + '<div class="sub">Mês de referência: Setembro de 2026</div>'
+    + '<details class="updatebox"><summary style="cursor:pointer;font-size:13.5px;font-weight:700">Atualizar dados da equipe (upload dos relatórios)</summary>'
+    + '<div class="note" style="margin-top:10px">Envie os dois relatórios do dia (.xlsx) exportados do sistema. Tudo é calculado aqui mesmo no navegador — faturado, definido, liberado, parado vencido, parado limite, positivação e o realizado por indústria foco.</div>'
+    + '<div class="note" style="margin-top:6px"><b>1.</b> Relatório de situação (colunas SITUACAO/VENDEDOR/...)</div>'
+    + '<input type="file" id="fileSituacao" accept=".xlsx" style="margin-top:4px;width:100%">'
+    + '<div class="note" style="margin-top:10px"><b>2.</b> Relatório de vendas fechadas (colunas FILIAL/VENDEDOR/.../Venda R$)</div>'
+    + '<input type="file" id="fileVendas" accept=".xlsx" style="margin-top:4px;width:100%">'
+    + '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><button style="width:auto" onclick="processarArquivos()">Processar arquivos e publicar</button><span class="msg" id="updMsg"></span></div>'
+    + '<details style="margin-top:14px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Prefiro colar os números manualmente</summary>'
+    + '<div class="note" style="margin-top:8px">Cole linhas (copiadas do Excel, com tabulação) na ordem: <b>código · faturado · definido · liberado · parado vencido · parado limite · positivação</b>. Não atualiza o realizado por indústria foco.</div>'
+    + '<textarea id="updTextarea" placeholder="11655&#9;150000&#9;800&#9;500&#9;0&#9;0&#9;32"></textarea>'
+    + '<div style="margin-top:8px"><button style="width:auto" onclick="salvarEPublicar()">Salvar e publicar (manual)</button></div>'
+    + '</details></details>'
+    + '<details class="updatebox" id="metasBox"><summary style="cursor:pointer;font-size:13.5px;font-weight:700">Editar metas dos RCAs</summary>'
+    + '<div class="note" style="margin-top:10px">Ajuste a meta de volume, de positivação ou de qualquer indústria foco de um RCA. Depois de mudar, clique em "Salvar alterações" — vai baixar um arquivo novo pra você arrastar no Netlify.</div>'
+    + '<div style="margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:10px"><div style="font-size:13px;font-weight:700">Minha meta da equipe (supervisão)</div>'
+    + '<div class="note" style="margin-top:4px">Vale s\u00f3 pro total da equipe. Deixe em branco para usar a soma das metas dos RCAs (mostrada como sugest\u00e3o no campo).</div>'
+    + '<div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">'
+    + '<label class="note">Meta volume da equipe (R$)<input type="text" id="eq_vol" value="'+(META_EQ.volume>0?META_EQ.volume:'')+'" placeholder="soma RCAs: '+fmt(tot.somaVol)+'" style="width:100%;margin-top:4px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-family:\'IBM Plex Mono\',monospace"></label>'
+    + '<label class="note">Meta positiva\u00e7\u00e3o da equipe (clientes)<input type="text" id="eq_pos" value="'+(META_EQ.posit>0?META_EQ.posit:'')+'" placeholder="soma RCAs: '+fmt(tot.somaPosit)+'" style="width:100%;margin-top:4px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-family:\'IBM Plex Mono\',monospace"></label>'
+    + Object.keys(indAgg).map(function(n,idx){ const i=indAgg[n]; return '<label class="note">Meta '+n+' da equipe ('+(i.tipo==='qtd'?'clientes':'R$')+')<input type="text" id="eq_ind_'+idx+'" value="'+((META_EQ.ind&&META_EQ.ind[n]>0)?META_EQ.ind[n]:'')+'" placeholder="soma RCAs: '+fmt(i.soma)+'" style="width:100%;margin-top:4px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-family:\'IBM Plex Mono\',monospace"></label>'; }).join('')
+    + '</div></div>'
+    + '<div class="note" style="margin-top:12px">Metas individuais dos RCAs:</div>'
+    + '<div class="note" id="metasTot" style="margin-top:4px;font-weight:600"></div>'
+    + data.map(function(r){
+        return '<details style="margin-top:10px;margin-left:2px"><summary style="cursor:pointer;font-size:13px"><b>'+r.nome+(r.bloqueado?' \u2014 <span style="color:var(--red)">bloqueado</span>':'')+'</b></summary>'
+          + '<div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">'
+          + '<label class="note" style="display:flex;align-items:center;gap:6px;flex-direction:row"><input type="checkbox" id="bloq_'+r.cod+'"'+(r.bloqueado?' checked':'')+' style="width:auto"> Bloquear acesso deste RCA</label>'
+          + '<label class="note">Meta volume (R$)<input type="text" oninput="atualizarTotaisMetas()" id="meta_vol_'+r.cod+'" value="'+r.metaVolume+'" style="width:100%;margin-top:4px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-family:\'IBM Plex Mono\',monospace"></label>'
+          + '<label class="note">Meta positivação (clientes)<input type="text" oninput="atualizarTotaisMetas()" id="meta_pos_'+r.cod+'" value="'+r.metaPosit+'" style="width:100%;margin-top:4px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-family:\'IBM Plex Mono\',monospace"></label>'
+          + r.industrias.map(function(i,idx){
+              return '<label class="note">Meta '+i.nome+' ('+(i.tipo==='qtd'?'clientes':'R$')+')<input type="text" oninput="atualizarTotaisMetas()" id="meta_ind_'+r.cod+'_'+idx+'" value="'+i.meta+'" style="width:100%;margin-top:4px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-family:\'IBM Plex Mono\',monospace"></label>';
+            }).join('')
+          + '</div></details>';
+      }).join('')
+    + '<div style="display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap"><button style="width:auto" onclick="salvarMetas()">Salvar alterações</button><span class="msg" id="metasMsg"></span></div>'
+    + '</details>'
+    + pillsHTML(tot)
+    + '<div class="bigcard"><div class="t">'+pillLabel()+' · Equipe</div><div class="row"><span class="num mono">R$ '+fmt(pillSum(tot))+'</span></div></div>'
+    + '<div class="bigcard"><div class="t">'+pillLabel()+' · Equipe vs. meta de volume</div><div class="row"><span class="num mono">R$ '+fmt(tot.vol)+'</span><span class="meta">/ meta R$ '+fmt(tot.metaVol)+'</span></div><div class="bar"><div style="width:'+Math.min(pVolT,100)+'%;background:'+barColor(pVolT)+'"></div></div>'+faltaHTML(tot.vol,tot.metaVol,'rs')+'</div>'
+    + '<div class="bigcard"><div class="t">Positivação geral · Equipe</div><div class="row"><span class="num mono">'+fmt(tot.posit)+'</span><span class="meta">/ meta '+fmt(tot.metaPosit)+' clientes</span></div><div class="bar"><div style="width:'+Math.min(pPositT,100)+'%;background:'+barColor(pPositT)+'"></div></div>'+faltaHTML(tot.posit,tot.metaPosit,'qtd')+'<div class="note" style="margin-top:4px">Contando: '+pillLabel()+'</div>'+positBreakdownHTML(data)
+    + '<details style="margin-top:10px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Ver clientes atendidos por RCA</summary>'
+    + data.map(function(r){ return '<details style="margin-top:8px;margin-left:4px"><summary style="cursor:pointer;font-size:12.5px"><b>'+r.nome+'</b> — '+clientesSel(r).length+' cliente(s)</summary>'+clientListHTML(clientesSel(r))+'</details>'; }).join('')
+    + '</details></div>'
+    + '<div class="section-title">Visão geral por pilar · Equipe</div><div class="pilar">'
+    + '<div class="item"><div class="h"><span>'+pillLabel()+' geral</span><span>'+pctOf(pillSum(tot),tot.metaVol).toFixed(0)+'%</span></div><div class="v">R$ '+fmt(pillSum(tot))+' de R$ '+fmt(tot.metaVol)+'</div></div>'
+    + '<div class="item"><div class="h"><span>Positivação geral</span><span>'+pPositT.toFixed(0)+'%</span></div><div class="v">'+fmt(tot.posit)+' de '+fmt(tot.metaPosit)+'</div></div>'
+    + Object.keys(indAgg).map(function(nome){ const i=indAgg[nome]; const p=pctOf(i.realizado,i.meta); return '<div class="item"><div class="h"><span>'+nome+'</span><span>'+p.toFixed(0)+'%</span></div><div class="v">'+(i.tipo==='qtd'?fmt(i.realizado)+' de '+fmt(i.meta)+' clientes':'R$ '+fmt(i.realizado)+' de R$ '+fmt(i.meta))+'</div></div>'; }).join('')
+    + '</div>'
+    + '<div class="section-title">Desempenho por RCA</div><div class="rcalist">'
+    + data.map(function(r){ const p=pctOf(vol(r),r.metaVolume); return '<div class="rcaitem" onclick=\'renderPersonal(data.find(function(x){return x.cod==="'+r.cod+'"}),true)\'><div><b>'+r.nome+'</b><span class="city">Código '+r.cod+(r.cidade?' · '+r.cidade:'')+'</span></div><span class="pct" style="color:'+barColor(p)+'">'+p.toFixed(0)+'%</span></div>'; }).join('')
+    + '</div>'
+    + '<div class="section-title">Indústrias foco · Equipe</div>'
+    + Object.keys(indAgg).map(function(nome){ const i=indAgg[nome]; const p=pctOf(i.realizado,i.meta); return '<div class="indcard"><div class="h"><b>'+nome.toUpperCase()+'</b><span class="badge '+(i.tipo==='qtd'?'g':'a')+'">'+(i.tipo==='qtd'?'POSITIVAÇÃO':'VENDA')+'</span></div><div class="row" style="margin-top:8px"><span class="num mono" style="font-size:20px">'+(i.tipo==='qtd'?fmt(i.realizado)+' clientes':'R$ '+fmt(i.realizado))+'</span><span class="meta">/ meta '+(i.tipo==='qtd'?fmt(i.meta)+' clientes':'R$ '+fmt(i.meta))+'</span></div><div class="bar"><div style="width:'+Math.min(p,100)+'%;background:'+barColor(p)+'"></div></div>'+faltaHTML(i.realizado,i.meta,i.tipo)
+        + '<details style="margin-top:10px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Ver clientes atendidos por RCA</summary>'
+        + data.map(function(r){ const ind = r.industrias.find(function(x){return x.nome===nome;}); const cl = ind?indSel(ind).clientes:[]; return '<details style="margin-top:8px;margin-left:4px"><summary style="cursor:pointer;font-size:12.5px"><b>'+r.nome+'</b> — '+(cl?cl.length:0)+' cliente(s)</summary>'+clientListHTML(cl)+'</details>'; }).join('')
+        + '</details></div>'; }).join('')
+    + '<div class="section-title">Ranking da equipe · % da meta de volume</div><div class="ranklist">'
+    + rankVol.map(function(r,idx){ return '<div class="rankrow"><span class="n">'+(idx+1)+'º</span><span class="name">'+r.nome+'</span><span class="val">'+pctOf(vol(r),r.metaVolume).toFixed(0)+'%</span></div>'; }).join('')
+    + '</div>'
+    + (function(){
+        const comissoes = data.map(function(r){ return {r:r, c:calcComissao(r)}; });
+        const totalComissao = comissoes.reduce(function(a,x){ return a+x.c.total; }, 0);
+        const rankComissao = comissoes.slice().sort(function(a,b){ return b.c.total - a.c.total; });
+        return '<div class="section-title">Comissão · Equipe</div>'
+          + '<div class="bigcard"><div class="t">Comissão total estimada · Equipe</div><div class="row"><span class="num mono" style="color:var(--green)">R$ '+fmt(totalComissao)+'</span></div></div>'
+          + '<div class="ranklist">'
+          + rankComissao.map(function(x){ return '<div class="rankrow" style="cursor:pointer" onclick=\'renderPersonal(data.find(function(y){return y.cod==="'+x.r.cod+'"}),true)\'><span class="name">'+x.r.nome+'</span><span class="val" style="color:var(--green)">R$ '+fmt(x.c.total)+'</span></div>'; }).join('')
+          + '</div>';
+      })();
+  app.innerHTML = html;
+  atualizarTotaisMetas();
+}
+
+function parseNum(v){
+  if(v===undefined||v===null) return 0;
+  if(typeof v==='number') return v;
+  var s = String(v).trim().replace(/\./g,'').replace(',', '.');
+  var n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseSituacao(rows){
+  var agg = {};
+  var revMap = reverseIndMap();
+  rows.forEach(function(row){
+    var sit = row['SITUACAO']; var vend = row['VENDEDOR'];
+    if(!vend || sit==='TOTAL' || String(vend).indexOf(' - ')<0) return;
+    var cod = String(vend).split(' - ')[0].trim();
+    if(!agg[cod]) agg[cod] = {definido:0, liberado:0, paradoVenc:0, paradoLimite:0, cliSt:{}, clientInd:{}, ind:{}};
+    var valor = parseNum(row['Valor R$']);
+    var s = String(sit||'');
+    if(s.indexOf('DEFINIDO')>=0) agg[cod].definido += valor;
+    else if(s.indexOf('LIBERADO')>=0) agg[cod].liberado += valor;
+    else if(s.indexOf('VENCIDO')>=0) agg[cod].paradoVenc += valor;
+    else if(s.indexOf('LIMITE')>=0) agg[cod].paradoLimite += valor;
+    var k = s.indexOf('DEFINIDO')>=0?'def':(s.indexOf('LIBERADO')>=0?'lib':(s.indexOf('VENCIDO')>=0?'pv':(s.indexOf('LIMITE')>=0?'pl':null)));
+    var cli = row['CLIENTE'];
+    if(k && cli){
+      agg[cod].cliSt[cli] = agg[cod].cliSt[cli] || {};
+      agg[cod].cliSt[cli][k] = true;
+      var fornRaw = String(row['FORNECEDOR']||'');
+      var forn = fornRaw.indexOf(' - ')>=0 ? fornRaw.split(' - ').slice(1).join(' - ').trim() : fornRaw.trim();
+      if(revMap[forn]){
+        agg[cod].clientInd[cli] = agg[cod].clientInd[cli] || {};
+        agg[cod].clientInd[cli][revMap[forn]] = true;
+        var ib = agg[cod].ind[revMap[forn]] = agg[cod].ind[revMap[forn]] || {};
+        ib[k] = ib[k] || {v:0, c:{}};
+        ib[k].v += valor;
+        ib[k].c[cli] = true;
+      }
+    }
+  });
+  return agg;
+}
+
+function reverseIndMap(){
+  var m = {};
+  Object.keys(IND_MAP).forEach(function(k){ m[IND_MAP[k]] = k; });
+  MANA_NAMES.forEach(function(fn){ m[fn] = 'Maná'; });
+  return m;
+}
+
+function parseVendas(rows){
+  var fat = {}, clientesSet = {}, fornClientes = {}, fornValor = {}, clientInd = {};
+  var revMap = reverseIndMap();
+  rows.forEach(function(row){
+    var vend = row['VENDEDOR'];
+    if(!vend || String(vend).indexOf(' - ')<0) return;
+    var cod = String(vend).split(' - ')[0].trim();
+    var venda = parseNum(row['Venda R$']);
+    fat[cod] = (fat[cod]||0) + venda;
+    clientesSet[cod] = clientesSet[cod] || {};
+    clientesSet[cod][row['CLIENTE']] = true;
+    var fornRaw = String(row['FORNECEDOR']||'');
+    var forn = fornRaw.indexOf(' - ')>=0 ? fornRaw.split(' - ').slice(1).join(' - ').trim() : fornRaw.trim();
+    fornClientes[cod] = fornClientes[cod] || {};
+    fornClientes[cod][forn] = fornClientes[cod][forn] || {};
+    fornClientes[cod][forn][row['CLIENTE']] = true;
+    fornValor[cod] = fornValor[cod] || {};
+    fornValor[cod][forn] = (fornValor[cod][forn]||0) + venda;
+    if(revMap[forn]){
+      clientInd[cod] = clientInd[cod] || {};
+      clientInd[cod][row['CLIENTE']] = clientInd[cod][row['CLIENTE']] || {};
+      clientInd[cod][row['CLIENTE']][revMap[forn]] = true;
+    }
+  });
+  return {fat:fat, clientesSet:clientesSet, fornClientes:fornClientes, fornValor:fornValor, clientInd:clientInd};
+}
+
+function nomeCliente(raw){
+  var s = String(raw||'').trim();
+  var i = s.indexOf(' - ');
+  return i>=0 ? s.slice(i+3).trim() : s;
+}
+
+function clientesDaIndustria(cod, nome, fornClientes){
+  var set = {};
+  if(nome==='Maná'){
+    MANA_NAMES.forEach(function(fn){
+      if(fornClientes[cod] && fornClientes[cod][fn]) Object.keys(fornClientes[cod][fn]).forEach(function(c){ set[c]=true; });
+    });
+  } else {
+    var fn = IND_MAP[nome];
+    if(fn && fornClientes[cod] && fornClientes[cod][fn]) Object.keys(fornClientes[cod][fn]).forEach(function(c){ set[c]=true; });
+  }
+  return Object.keys(set);
+}
+
+function clientListHTML(list){
+  if(!list || list.length===0) return '<div class="note">Nenhum cliente registrado ainda.</div>';
+  return '<ul style="margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--muted);line-height:1.6">'
+    + list.map(function(c){
+        if(typeof c === 'string') return '<li>'+c+'</li>';
+        var tag = (c.industrias && c.industrias.length) ? ' <span style="color:var(--amber)">— '+c.industrias.join(', ')+'</span>' : ' <span style="color:var(--amber)">— fora das indústrias foco</span>';
+        return '<li>'+c.nome+tag+'</li>';
+      }).join('')
+    + '</ul>';
+}
+
+function realizadoIndustria(cod, nome, tipo, fornClientes, fornValor){
+  var clientes = {}; var valor = 0; var count = 0;
+  if(nome==='Maná'){
+    MANA_NAMES.forEach(function(fn){
+      if(fornClientes[cod] && fornClientes[cod][fn]){
+        Object.keys(fornClientes[cod][fn]).forEach(function(c){ if(!clientes[c]){clientes[c]=true; count++;} });
+        valor += (fornValor[cod][fn]||0);
+      }
+    });
+  } else {
+    var fn = IND_MAP[nome];
+    if(fn && fornClientes[cod] && fornClientes[cod][fn]){
+      count = Object.keys(fornClientes[cod][fn]).length;
+      valor = fornValor[cod][fn]||0;
+    }
+  }
+  return tipo==='qtd' ? count : Math.round(valor*100)/100;
+}
+
+function baixarArquivoAtualizado(doc, filename){
+  var blob = new Blob([doc], {type:'text/html;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename || 'index.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+}
+
+async function salvarMetas(){
+  var msg = document.getElementById('metasMsg');
+  try{
+    var eqv = document.getElementById('eq_vol'), eqp = document.getElementById('eq_pos');
+    META_EQ.volume = eqv ? parseNum(eqv.value) : META_EQ.volume;
+    META_EQ.posit = eqp ? parseNum(eqp.value) : META_EQ.posit;
+    var nomesInd = []; data.forEach(function(r){ r.industrias.forEach(function(i){ if(nomesInd.indexOf(i.nome)<0) nomesInd.push(i.nome); }); });
+    META_EQ.ind = {};
+    nomesInd.forEach(function(n,idx){ var el=document.getElementById('eq_ind_'+idx); var v=el?parseNum(el.value):0; if(v>0) META_EQ.ind[n]=v; });
+    data.forEach(function(r){
+      const volEl = document.getElementById('meta_vol_'+r.cod);
+      const posEl = document.getElementById('meta_pos_'+r.cod);
+      if(volEl) r.metaVolume = parseNum(volEl.value);
+      if(posEl) r.metaPosit = parseNum(posEl.value);
+      const bloqEl = document.getElementById('bloq_'+r.cod);
+      r.bloqueado = bloqEl ? !!bloqEl.checked : !!r.bloqueado;
+      r.industrias.forEach(function(i, idx){
+        const el = document.getElementById('meta_ind_'+r.cod+'_'+idx);
+        if(el) i.meta = parseNum(el.value);
+      });
+    });
+    const newUpdated = new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+    const doc = buildDoc(data, newUpdated);
+    baixarArquivoAtualizado(doc, 'index.html');
+    document.getElementById('updDate').textContent = newUpdated;
+    renderTeam();
+    var box = document.getElementById('metasBox'); if(box) box.open = true;
+    msg = document.getElementById('metasMsg');
+    msg.textContent = 'Metas atualizadas! Arquivo index.html baixado — arraste ele no Netlify pra valer pra todo mundo.';
+    msg.className = 'msg ok';
+  }catch(e){
+    msg.textContent = 'Erro ao salvar metas ('+(e && e.message ? e.message : 'erro')+').';
+    msg.className = 'msg err';
+  }
+}
+
+function mergePositivacao(r, v, s){
+  var m = {};
+  function get(c){ if(!m[c]) m[c] = {st:{}, inds:{}}; return m[c]; }
+  Object.keys(v.clientesSet[r.cod]||{}).forEach(function(c){
+    var e = get(c); e.st.fat = true;
+    if(v.clientInd[r.cod] && v.clientInd[r.cod][c]) Object.keys(v.clientInd[r.cod][c]).forEach(function(k){ e.inds[k]=true; });
+  });
+  if(s && s.cliSt) Object.keys(s.cliSt).forEach(function(c){
+    var e = get(c);
+    Object.keys(s.cliSt[c]).forEach(function(k){ e.st[k]=true; });
+    if(s.clientInd && s.clientInd[c]) Object.keys(s.clientInd[c]).forEach(function(k){ e.inds[k]=true; });
+  });
+  var lista = Object.keys(m);
+  r.posit = lista.filter(function(c){ return m[c].st.fat; }).length;
+  r.clientesPositivados = lista.map(function(c){
+    return {nome: nomeCliente(c), industrias: Object.keys(m[c].inds), st: Object.keys(m[c].st)};
+  }).sort(function(a,b){ return a.nome.localeCompare(b.nome); });
+}
+
+async function processarArquivos(){
+  const msg = document.getElementById('updMsg');
+  const f1 = document.getElementById('fileSituacao').files[0];
+  const f2 = document.getElementById('fileVendas').files[0];
+  if(!f1 || !f2){ msg.textContent='Selecione os dois arquivos.'; msg.className='msg err'; return; }
+  msg.textContent='Lendo arquivos...'; msg.className='msg';
+  try{
+    const buf1 = await f1.arrayBuffer();
+    const buf2 = await f2.arrayBuffer();
+    const wb1 = XLSX.read(buf1, {type:'array'});
+    const wb2 = XLSX.read(buf2, {type:'array'});
+    const rows1 = XLSX.utils.sheet_to_json(wb1.Sheets[wb1.SheetNames[0]]);
+    const rows2 = XLSX.utils.sheet_to_json(wb2.Sheets[wb2.SheetNames[0]]);
+    const sit = parseSituacao(rows1);
+    const v = parseVendas(rows2);
+    data.forEach(function(r){
+      const s = sit[r.cod] || {definido:0,liberado:0,paradoVenc:0,paradoLimite:0,cliSt:{},clientInd:{},ind:{}};
+      r.faturado = Math.round((v.fat[r.cod]||0)*100)/100;
+      r.definido = Math.round(s.definido*100)/100;
+      r.liberado = Math.round(s.liberado*100)/100;
+      r.paradoVenc = Math.round(s.paradoVenc*100)/100;
+      r.paradoLimite = Math.round(s.paradoLimite*100)/100;
+      mergePositivacao(r, v, s);
+      r.industrias.forEach(function(i){
+        i.realizado = realizadoIndustria(r.cod, i.nome, i.tipo, v.fornClientes, v.fornValor);
+        i.clientes = clientesDaIndustria(r.cod, i.nome, v.fornClientes).map(nomeCliente).sort();
+        i.ps = {};
+        ['def','lib','pv','pl'].forEach(function(k){
+          var b = s.ind && s.ind[i.nome] && s.ind[i.nome][k];
+          i.ps[k] = b ? {v: Math.round(b.v*100)/100, c: Object.keys(b.c).map(nomeCliente).sort()} : {v:0, c:[]};
+        });
+      });
+      r.ind = r.industrias.filter(function(i){return i.tipo==='qtd';}).reduce(function(a,i){return a+i.realizado;},0);
+    });
+    const newUpdated = new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+    const doc = buildDoc(data, newUpdated);
+    baixarArquivoAtualizado(doc, 'index.html');
+    document.getElementById('updDate').textContent = newUpdated;
+    msg.textContent = 'Arquivo index.html atualizado baixado! Agora arraste esse arquivo no Netlify (mesmo site) pra atualizar pra todo mundo. Dados de '+data.length+' RCAs recalculados (comissão só sobre o faturado; os outros valores entram no panorama).';
+    msg.className = 'msg ok';
+  }catch(e){
+    msg.textContent = 'Erro ao processar arquivos ('+(e && e.message ? e.message : 'erro')+').';
+    msg.className='msg err';
+  }
+}
+
+function parseUpdateText(raw){
+  const lines = raw.split(/\r?\n/).filter(function(l){ return l.trim(); });
+  const byCod = {};
+  data.forEach(function(r,i){ byCod[r.cod]=i; });
+  let updated=0, skipped=0;
+  const num = function(s){ return parseFloat((s||'0').replace(/\./g,'').replace(',','.')) || 0; };
+  lines.forEach(function(line){
+    const parts = line.split('\t').map(function(s){ return s.trim(); });
+    if(parts.length<2) return;
+    const cod = parts[0].replace(/\D/g,'');
+    const idx = byCod[cod];
+    if(idx===undefined){ skipped++; return; }
+    data[idx].faturado = num(parts[1]);
+    data[idx].definido = num(parts[2]);
+    data[idx].liberado = num(parts[3]);
+    data[idx].paradoVenc = num(parts[4]);
+    data[idx].paradoLimite = num(parts[5]);
+    data[idx].posit = num(parts[6]);
+    updated++;
+  });
+  return {updated:updated, skipped:skipped};
+}
+
+function safeJSON(v){ var closeTag = '</'+'script'; return JSON.stringify(v).split(closeTag).join('<\\/script'); }
+
+function buildDoc(newData, newUpdated){
+  const funcs = [fmt,fmtPct,mergePositivacao,positBreakdownHTML,stKeys,clientesSel,positSel,indSel,pillsHTML,rerender,pct1,faltaHTML,atualizarTotaisMetas,pctOf,barColor,toggleAdminMode,meuPin,salvarMeuPin,tryLogin,abrirTrocaSenha,confirmarTrocaSenha,logout,boot,vol,calcComissao,pillSum,pillLabel,togglePill,renderPersonal,renderTeam,parseNum,parseSituacao,reverseIndMap,parseVendas,nomeCliente,clientesDaIndustria,clientListHTML,realizadoIndustria,baixarArquivoAtualizado,salvarMetas,processarArquivos,parseUpdateText,safeJSON,buildDoc,salvarEPublicar]
+    .map(function(f){ return f.toString(); }).join('\n\n');
+  const scriptBody =
+    "const HEAD_HTML = " + safeJSON(HEAD_HTML) + ";\n" +
+    "const LAST_UPDATE = " + safeJSON(newUpdated) + ";\n" +
+    "const data = " + safeJSON(newData) + ";\n" +
+    "const ADMIN_CODE = '331';\nconst SESSION_KEY = 'painelrca870_session';\nlet adminMode = false;\nlet pillSel = {fat:true, def:false, lib:false, pv:false, pl:false};\nvar viewState = {t:'team'};\nconst PREMIO_INDUSTRIA = 340;\nconst PCT_FIXO = 0.01;\nconst PCT_VOL = 0.003;\nconst PCT_POSIT = 0.008;\n" +
+    "var IND_MAP = " + safeJSON(IND_MAP) + ";\n" +
+    "var META_EQ = " + safeJSON(META_EQ) + ";\n" +
+    "var MANA_NAMES = " + safeJSON(MANA_NAMES) + ";\n\n" +
+    funcs + "\n\n" +
+    "document.getElementById('codeInput').addEventListener('keydown', function(e){ if(e.key==='Enter') tryLogin(); });\n" +
+    "try{ var saved = sessionStorage.getItem(SESSION_KEY); if(saved) boot(saved); }catch(e){}";
+  return HEAD_HTML + "<script>\n" + scriptBody + "\n</" + "script>\n</body>\n</html>";
+}
+
+async function salvarEPublicar(){
+  const msg = document.getElementById('updMsg');
+  const raw = document.getElementById('updTextarea').value.trim();
+  if(!raw){ msg.textContent='Cole os dados antes de salvar.'; msg.className='msg err'; return; }
+  const r = parseUpdateText(raw);
+  const newUpdated = new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+  try{
+    const doc = buildDoc(data, newUpdated);
+    baixarArquivoAtualizado(doc, 'index.html');
+    document.getElementById('updDate').textContent = newUpdated;
+    document.getElementById('updTextarea').value='';
+    msg.textContent = 'Arquivo index.html atualizado baixado! '+r.updated+' RCA(s) atualizada(s)'+(r.skipped?(', '+r.skipped+' código(s) não encontrado(s)'):'')+'. Arraste esse arquivo no Netlify pra atualizar pra todo mundo.';
+    msg.className = 'msg ok';
+  }catch(e){
+    msg.textContent = 'Não foi possível gerar o arquivo ('+(e && e.message ? e.message : 'erro')+').';
+    msg.className='msg err';
+  }
+}
+
+document.getElementById('codeInput').addEventListener('keydown', function(e){ if(e.key==='Enter') tryLogin(); });
+try{ var saved = sessionStorage.getItem(SESSION_KEY); if(saved) boot(saved); }catch(e){}
+</script>
+</body>
+</html>
